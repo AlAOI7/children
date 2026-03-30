@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>التشخيص المبدئي | نظام تحليل سلوك الأطفال</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+<nav class="navbar" id="navbar"></nav>
+
+<div class="main-content">
+  <div class="container-sm">
+
+    <!-- Result Hero -->
+    <div class="result-hero" id="resultHero">
+      <div class="result-circle" id="resultCircle">
+        <span id="resultEmoji">⬜</span>
+        <span class="score-label" id="resultScoreLabel">0 / 100</span>
+      </div>
+      <div style="font-size:0.82rem;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:0.3rem">التشخيص المبدئي</div>
+      <div class="result-title" id="resultTitle">جاري التحميل...</div>
+      <div class="result-subtitle" id="resultSubtitle"></div>
+      <div class="mt-2" id="resultBadge"></div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-2 flex-wrap flex-center mb-4">
+      <button class="btn btn-outline" onclick="exportPDF()">📄 تصدير PDF</button>
+      <button class="btn btn-outline" id="historyBtn" onclick="goHistory()">📁 عرض السجل</button>
+      <a href="dashboard.html" class="btn btn-outline">← لوحة التحكم</a>
+    </div>
+
+    <!-- Child Info -->
+    <div class="card mb-4" id="childInfoCard"></div>
+
+    <!-- Category Breakdown -->
+    <div class="section-title">تفاصيل نتائج المحاور</div>
+    <div class="category-scores mb-4" id="categoryScores"></div>
+
+    <!-- Threshold Table -->
+    <div class="card mb-4">
+      <div class="section-title">معيار التشخيص المبدئي</div>
+      <table class="threshold-table">
+        <thead>
+          <tr>
+            <th>التشخيص المبدئي</th>
+            <th>المحور الغالب</th>
+            <th>التوصية</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-normal">🟢 طبيعي</span></td>
+            <td style="color:var(--text-secondary)">جميع المحاور منخفضة</td>
+            <td style="color:var(--text-secondary)">متابعة دورية</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-attention">🟡 تشتت الانتباه (ADHD)</span></td>
+            <td style="color:var(--text-secondary)">محور الانتباه مرتفع</td>
+            <td style="color:var(--text-secondary)">تدخل مبكر ومتابعة</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-hyperactive">🔴 فرط الحركة (ADHD)</span></td>
+            <td style="color:var(--text-secondary)">محور فرط الحركة مرتفع</td>
+            <td style="color:var(--text-secondary)">استشارة طبيب أطفال</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-autism">🟣 طيف التوحد (ASD)</span></td>
+            <td style="color:var(--text-secondary)">محور التفاعل الاجتماعي مرتفع</td>
+            <td style="color:var(--text-secondary)">مراجعة متخصص النمو العصبي</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Radar Chart -->
+    <div class="chart-container mb-4">
+      <div class="chart-title">📊 مخطط شعاعي – المحاور الثلاثة</div>
+      <canvas id="radarChart" height="260"></canvas>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="chart-container mb-4">
+      <div class="chart-title">📈 درجات كل محور مقارنةً بالحد الأقصى</div>
+      <canvas id="barChart" height="180"></canvas>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="card mb-4">
+      <div class="section-title">💡 التوصيات</div>
+      <ul class="recommend-list" id="recommendList"></ul>
+    </div>
+
+    <!-- Camera Analysis Section (collapsible) -->
+    <div class="camera-result-section mb-4" id="cameraSection" style="display:none">
+      <button class="camera-result-toggle" onclick="toggleCameraPanel()">
+        <span>📷 نتائج تحليل الكاميرا</span>
+        <span id="cameraBadgeInline"></span>
+        <span id="cameraToggleArrow">▼</span>
+      </button>
+      <div class="camera-result-body" id="cameraBody" style="display:none">
+        <div id="cameraBodyContent"></div>
+        <div style="text-align:center;margin-top:1rem">
+          <a id="goCameraBtn" href="#" class="btn btn-outline btn-sm">📷 إعادة تحليل الكاميرا</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom actions -->
+    <div class="flex gap-2 flex-wrap">
+      <a id="newAssessmentBtn" href="#" class="btn btn-primary btn-full">📋 تقييم جديد لنفس الطفل</a>
+    </div>
+
+    <div style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-top:2rem;padding:1rem;border:1px solid var(--border);border-radius:var(--radius-sm)">
+      ⚠️ تنبيه: هذا <strong>تشخيص مبدئي</strong> فقط وليس تشخيصاً طبياً رسمياً. يُرجى استشارة طبيب أو أخصائي نفسي متخصص.
+    </div>
+
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/assessment.js"></script>
+<script src="js/charts.js"></script>
+<script>
+  const user = requireAuth();
+  if (!user) throw '';
+
+  const childId  = getQueryParam('child');
+  const resultId = getQueryParam('result');
+  if (!childId) { window.location.href = 'dashboard.html'; }
+
+  renderNavbar('dashboard');
+
+  // ===== LOAD ALL DATA ASYNC =====
+  (async () => {
+    const [child, results] = await Promise.all([
+      DB.getChild(childId),
+      DB.getResults(childId)
+    ]);
+
+    if (!child) { window.location.href = 'dashboard.html'; return; }
+
+    // Find the result — match by id or report_id
+    const result = results.find(r =>
+      String(r.id) === String(resultId) ||
+      String(r.report_id) === String(resultId)
+    ) || results[0];
+
+    if (!result) { window.location.href = 'dashboard.html'; return; }
+
+    const info = getLevelInfo(result.level);
+    const cats = ['attention', 'hyperactivity', 'social'];
+
+    // ── Hero circle ──────────────────────────────────────
+    const circle = document.getElementById('resultCircle');
+    circle.className = `result-circle ${info.className}`;
+    document.getElementById('resultEmoji').textContent       = info.emoji;
+    document.getElementById('resultScoreLabel').textContent  = `${result.total} / 100`;
+    document.getElementById('resultTitle').textContent       = info.label;
+    document.getElementById('resultSubtitle').textContent    = `تاريخ التشخيص المبدئي: ${formatDate(result.date)}`;
+    document.getElementById('resultBadge').innerHTML         = `<span class="badge ${info.badge}">${info.emoji} ${info.label}</span>`;
+
+    // ── Action links ──────────────────────────────────────
+    document.getElementById('historyBtn').onclick          = () => window.location.href = `history.html?child=${childId}`;
+    document.getElementById('newAssessmentBtn').href       = `assessment.html?child=${childId}`;
+
+    // ── Child info card ───────────────────────────────────
+    document.getElementById('childInfoCard').innerHTML = `
+      <div class="flex gap-2" style="align-items:center">
+        <div class="child-avatar" style="margin-bottom:0;width:52px;height:52px;flex-shrink:0">${child.name.charAt(0)}</div>
+        <div>
+          <div style="font-weight:700;font-size:1.05rem">${child.name}</div>
+          <div style="color:var(--text-muted);font-size:0.85rem">
+            العمر: ${child.age} سنوات | ${child.grade || 'غير محدد'} | ${child.gender === 'male' ? '👦 ذكر' : '👧 أنثى'}
+            ${child.school ? '<br>🏫 ' + child.school : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    // ── Category score cards ──────────────────────────────
+    document.getElementById('categoryScores').innerHTML = cats.map(c => {
+      const score    = (result.categories || {})[c] || 0;
+      const max      = CATEGORY_MAX[c];
+      const catLevel = classifyCategoryScore(c, score);
+      const catInfo  = getLevelInfo(catLevel);
+      return `
+        <div class="category-score-card">
+          <div class="cat-name">${CATEGORY_LABELS[c]}</div>
+          <div class="cat-val" style="color:${catInfo.color}">${score}</div>
+          <div class="cat-max">من ${max} نقطة</div>
+          <span class="badge ${catInfo.badge}" style="margin-top:0.5rem;font-size:0.75rem">${catInfo.emoji} ${catInfo.label}</span>
+        </div>
+      `;
+    }).join('');
+
+    // ── Charts ────────────────────────────────────────────
+    setTimeout(() => {
+      renderRadarChart('radarChart', result.categories);
+      renderBarChart('barChart', result.categories);
+    }, 120);
+
+    // ── Recommendations ───────────────────────────────────
+    const recs = getRecommendations(result.level, result.categories);
+    document.getElementById('recommendList').innerHTML = recs.map(r =>
+      `<li><div class="recommend-icon">💡</div><span>${r.text}</span></li>`
+    ).join('');
+
+    // ── Camera section ────────────────────────────────────
+    document.getElementById('goCameraBtn').href = `camera.html?child=${childId}`;
+    const camSessions = await DB.getCameraResults(childId);
+    if (camSessions && camSessions.length > 0) {
+      const cam = camSessions[0];
+      const camInfo = getLevelInfo(cam.level);
+      document.getElementById('cameraSection').style.display = 'block';
+      document.getElementById('cameraBadgeInline').innerHTML =
+        `<span class="badge ${camInfo.badge}" style="font-size:0.75rem;margin:0 0.5rem">${camInfo.emoji} ${camInfo.label}</span>`;
+      document.getElementById('cameraBodyContent').innerHTML = `
+        <div class="cam-metrics-grid" style="grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-top:1rem">
+          <div class="cam-metric-card"><div class="cam-metric-icon">🏃</div>
+            <div class="cam-metric-val">${(cam.avg_movement||0).toFixed(1)}</div>
+            <div class="cam-metric-label">متوسط الحركة</div></div>
+          <div class="cam-metric-card"><div class="cam-metric-icon">😐</div>
+            <div class="cam-metric-val">${((cam.avg_neutral||0)*100).toFixed(0)}%</div>
+            <div class="cam-metric-label">التعبير المحايد</div></div>
+          <div class="cam-metric-card"><div class="cam-metric-icon">📊</div>
+            <div class="cam-metric-val">${cam.sample_count||0}</div>
+            <div class="cam-metric-label">عدد العينات</div></div>
+        </div>
+      `;
+    }
+
+    // ── Camera toggle ─────────────────────────────────────
+    window.toggleCameraPanel = function() {
+      const body  = document.getElementById('cameraBody');
+      const arrow = document.getElementById('cameraToggleArrow');
+      const open  = body.style.display === 'block';
+      body.style.display  = open ? 'none' : 'block';
+      arrow.textContent   = open ? '▼' : '▲';
+    };
+
+    // ── PDF Export ────────────────────────────────────────
+    window.exportPDF = function() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      doc.setFont('helvetica');
+      doc.setFillColor(108, 99, 255);
+      doc.rect(0, 0, 210, 35, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.text('Smart Child Behavior Analysis Report', 105, 15, { align: 'center' });
+      doc.setFontSize(11);
+      doc.text('Child Behavioral Screening Report', 105, 25, { align: 'center' });
+
+      doc.setTextColor(30, 30, 60); doc.setFontSize(12);
+      doc.text('Child Information:', 15, 48);
+      doc.setFontSize(10); doc.setTextColor(80, 80, 120);
+      doc.text(`Name: ${child.name}`, 15, 57);
+      doc.text(`Age: ${child.age} years`, 15, 64);
+      doc.text(`Grade: ${child.grade || 'N/A'}`, 15, 71);
+      doc.text(`School: ${child.school || 'N/A'}`, 15, 78);
+      doc.text(`Assessment Date: ${formatDate(result.date)}`, 15, 85);
+
+      doc.setFontSize(13); doc.setTextColor(30, 30, 60);
+      doc.text('Assessment Result:', 15, 100);
+      const lc = { normal:[39,174,96], attention:[230,126,34], hyperactive:[231,76,60], autism:[168,85,247] }[result.level] || [108,99,255];
+      doc.setFillColor(...lc);
+      doc.roundedRect(15, 105, 180, 18, 4, 4, 'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(12);
+      doc.text(`${info.label}  (${result.total}/100)`, 105, 116, { align: 'center' });
+
+      doc.setTextColor(30,30,60); doc.setFontSize(12);
+      doc.text('Category Breakdown:', 15, 135);
+      let y = 143;
+      cats.forEach(cat => {
+        const sc = (result.categories||{})[cat] || 0;
+        const mx = CATEGORY_MAX[cat];
+        doc.setFontSize(10); doc.setTextColor(80,80,120);
+        doc.text(`${CATEGORY_LABELS[cat]}: ${sc} / ${mx}`, 15, y);
+        doc.setFillColor(200,200,220); doc.rect(110, y-4, 80, 5, 'F');
+        doc.setFillColor(...lc); doc.rect(110, y-4, Math.round((sc/mx)*80), 5, 'F');
+        y += 12;
+      });
+
+      doc.setTextColor(30,30,60); doc.setFontSize(12);
+      doc.text('Recommendations:', 15, y+8); y += 16;
+      recs.slice(0,5).forEach(r => {
+        doc.setFontSize(9); doc.setTextColor(80,80,120);
+        const lines = doc.splitTextToSize('• ' + r.text, 180);
+        doc.text(lines, 15, y); y += lines.length * 5 + 2;
+      });
+      doc.setFontSize(8); doc.setTextColor(150,150,180);
+      doc.text('Disclaimer: This is a preliminary screening tool only. Not a substitute for professional diagnosis.', 105, 285, { align:'center' });
+      doc.save(`تقرير_${child.name}_${new Date().toLocaleDateString('en')}.pdf`);
+      showToast('تم تصدير التقرير بنجاح!', 'success');
+    };
+
+    window.goHistory = () => window.location.href = `history.html?child=${childId}`;
+
+  })();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم | نظام تحليل سلوك الأطفال</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="navbar" id="navbar"></nav>
+
+<div class="main-content">
+  <div class="container">
+    <!-- Welcome -->
+    <div class="page-header" id="welcomeHeader">
+      <h1 id="greetText">مرحباً</h1>
+      <p>هنا يمكنك إدارة ملفات الأطفال ومتابعة نتائج التقييم</p>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="grid grid-3 mb-4" id="statsRow">
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-purple">👶</div>
+        <div class="stat-info">
+          <h3 id="statChildren">0</h3>
+          <p>إجمالي الأطفال</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-cyan">📋</div>
+        <div class="stat-info">
+          <h3 id="statAssessments">0</h3>
+          <p>التقييمات المنجزة</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-green">🟢</div>
+        <div class="stat-info">
+          <h3 id="statNormal">0</h3>
+          <p>حالات طبيعية</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Children Section -->
+    <div class="flex-between mb-3">
+      <div class="section-title">قائمة الأطفال</div>
+      <a href="add-child.html" class="btn btn-primary btn-sm">+ إضافة طفل</a>
+    </div>
+
+    <div id="childrenGrid" class="grid grid-3">
+      <!-- cards injected by JS -->
+    </div>
+
+    <div id="emptyState" class="empty-state hidden">
+      <div class="empty-icon">👶</div>
+      <h3>لا يوجد أطفال مسجلون بعد</h3>
+      <p>ابدأ بإضافة ملف طفل للقيام بتقييم سلوكي</p>
+      <a href="add-child.html" class="btn btn-primary">+ إضافة طفل جديد</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="deleteModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">⚠️ تأكيد الحذف</span>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <p style="color:var(--text-secondary);margin-bottom:1.5rem;">هل أنت متأكد من حذف ملف هذا الطفل؟ سيتم حذف جميع نتائج التقييم أيضاً.</p>
+    <div class="flex gap-2">
+      <button class="btn btn-danger btn-full" id="confirmDeleteBtn">🗑️ حذف</button>
+      <button class="btn btn-outline btn-full" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script>
+  const user = requireAuth();
+  if (user) {
+    renderNavbar('dashboard');
+    document.getElementById('greetText').textContent = 'مرحباً، ' + user.name + ' 👋';
+
+    let pendingDeleteId = null;
+
+    async function renderChildren() {
+      const children    = await DB.getChildren();
+      const grid        = document.getElementById('childrenGrid');
+      const empty       = document.getElementById('emptyState');
+
+      // Fetch latest results for all children in parallel
+      const latestArr = await Promise.all(children.map(c => DB.getLatestResult(c.child_id || c.id)));
+
+      // Stats
+      document.getElementById('statChildren').textContent    = children.length;
+      const allResultsCount = latestArr.filter(Boolean).length;
+      document.getElementById('statAssessments').textContent = allResultsCount;
+      const normalCount = latestArr.filter(r => r && r.level === 'normal').length;
+      document.getElementById('statNormal').textContent      = normalCount;
+
+      if (children.length === 0) {
+        empty.classList.remove('hidden');
+        grid.classList.add('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      grid.classList.remove('hidden');
+
+      grid.innerHTML = children.map((child, i) => {
+        const cid    = child.child_id || child.id;
+        const latest = latestArr[i];
+        const info   = latest ? getLevelInfo(latest.level) : null;
+        const initial = child.name.charAt(0);
+        return `
+          <div class="child-card">
+            <div class="child-avatar">${initial}</div>
+            <div class="child-name">${child.name}</div>
+            <div class="child-meta">
+              العمر: ${child.age} سنوات &nbsp;|&nbsp; ${child.grade || 'غير محدد'}
+              ${child.school ? '<br>🏫 ' + child.school : ''}
+            </div>
+            ${info
+              ? `<div class="mb-2"><span class="badge ${info.badge}">${info.emoji} ${info.label}</span>
+                 <span style="font-size:0.8rem;color:var(--text-muted);margin-right:0.5rem">${formatDate(latest.date)}</span></div>`
+              : `<div class="mb-2"><span class="badge badge-pending">⬜ لم يُقيَّم بعد</span></div>`
+            }
+            <div class="child-actions">
+              <button class="btn btn-primary btn-sm" onclick="startAssessment('${cid}')">📋 تقييم جديد</button>
+              <button class="btn btn-outline btn-sm" onclick="startCamera('${cid}')" style="border-color:rgba(16,185,129,0.5);color:#34d399;">📷 الكاميرا</button>
+              ${latest ? `<button class="btn btn-outline btn-sm" onclick="viewResult('${latest.id}','${cid}')">📊 عرض النتيجة</button>` : ''}
+              <button class="btn btn-outline btn-sm" onclick="viewHistory('${cid}')">📁 السجل</button>
+              <button class="btn btn-danger btn-sm" onclick="confirmDelete('${cid}')">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function startAssessment(childId) { window.location.href = `assessment.html?child=${childId}`; }
+    function startCamera(childId)     { window.location.href = `camera.html?child=${childId}`; }
+    function viewResult(resultId, childId) { window.location.href = `result.html?child=${childId}&result=${resultId}`; }
+    function viewHistory(childId)     { window.location.href = `history.html?child=${childId}`; }
+    function confirmDelete(childId) {
+      pendingDeleteId = childId;
+      document.getElementById('deleteModal').classList.remove('hidden');
+    }
+    function closeModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+      pendingDeleteId = null;
+    }
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+      if (pendingDeleteId) {
+        await DB.deleteChild(pendingDeleteId);
+        showToast('تم حذف ملف الطفل', 'warning');
+        closeModal();
+        renderChildren();
+      }
+    });
+    window.startAssessment = startAssessment;
+    window.startCamera     = startCamera;
+    window.viewResult      = viewResult;
+    window.viewHistory     = viewHistory;
+    window.confirmDelete   = confirmDelete;
+    window.closeModal      = closeModal;
+
+    renderChildren();
+  }
+</script>
+</body>
+</html>
+

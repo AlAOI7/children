@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إضافة طفل | نظام تحليل سلوك الأطفال</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="navbar" id="navbar"></nav>
+
+<div class="main-content">
+  <div class="container-sm">
+    <div class="page-header">
+      <h1>إضافة طفل جديد</h1>
+      <p>أدخل بيانات الطفل لإنشاء ملفه الشخصي</p>
+    </div>
+
+    <div class="card">
+      <form id="addChildForm" novalidate>
+        <div class="form-group">
+          <label class="form-label">👦 اسم الطفل</label>
+          <input type="text" id="childName" class="form-control" placeholder="أدخل الاسم الكامل للطفل" required>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="form-group">
+            <label class="form-label">🎂 العمر (بالسنوات)</label>
+            <input type="number" id="childAge" class="form-control" placeholder="مثال: 7" min="2" max="18" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">⚥ الجنس</label>
+            <select id="childGender" class="form-control">
+              <option value="male">ذكر</option>
+              <option value="female">أنثى</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">📚 الصف الدراسي</label>
+          <select id="childGrade" class="form-control">
+            <option value="">اختر الصف</option>
+            <option>ما قبل المدرسة</option>
+            <option>الصف الأول الابتدائي</option>
+            <option>الصف الثاني الابتدائي</option>
+            <option>الصف الثالث الابتدائي</option>
+            <option>الصف الرابع الابتدائي</option>
+            <option>الصف الخامس الابتدائي</option>
+            <option>الصف السادس الابتدائي</option>
+            <option>الصف الأول المتوسط</option>
+            <option>الصف الثاني المتوسط</option>
+            <option>الصف الثالث المتوسط</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🏫 اسم المدرسة (اختياري)</label>
+          <input type="text" id="childSchool" class="form-control" placeholder="أدخل اسم المدرسة">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">📝 ملاحظات إضافية (اختيارية)</label>
+          <textarea id="childNotes" class="form-control" rows="3" placeholder="أي ملاحظات مهمة عن الطفل..."></textarea>
+        </div>
+
+        <div class="form-error" id="child-err" style="display:block;margin-bottom:1rem;text-align:center;"></div>
+
+        <div class="flex gap-2 flex-wrap">
+          <button type="submit" class="btn btn-primary btn-lg" style="flex:1">💾 حفظ وإضافة الطفل</button>
+          <a href="dashboard.html" class="btn btn-outline btn-lg" style="flex:1">إلغاء</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script>
+  const user = requireAuth();
+  if (user) {
+    renderNavbar('add-child');
+
+    document.getElementById('addChildForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type=submit]');
+      const name   = document.getElementById('childName').value.trim();
+      const age    = document.getElementById('childAge').value;
+      const gender = document.getElementById('childGender').value;
+      const grade  = document.getElementById('childGrade').value;
+      const school = document.getElementById('childSchool').value.trim();
+      const notes  = document.getElementById('childNotes').value.trim();
+      const errEl  = document.getElementById('child-err');
+
+      errEl.textContent = '';
+      if (!name) { errEl.textContent = 'يرجى إدخال اسم الطفل'; return; }
+      if (!age || age < 2 || age > 18) { errEl.textContent = 'يرجى إدخال عمر صحيح بين 2 و 18 سنة'; return; }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ جاري الحفظ...';
+
+      const child = await DB.addChild(user.id, { name, age: parseInt(age), gender, grade, school, notes });
+      if (!child) {
+        errEl.textContent = 'حدث خطأ أثناء الحفظ. تأكد من اتصال Flask';
+        submitBtn.disabled = false;
+        submitBtn.textContent = '💾 حفظ وإضافة الطفل';
+        return;
+      }
+      showToast('تم إضافة ' + child.name + ' بنجاح!', 'success');
+      const cid = child.child_id || child.id;
+      setTimeout(() => {
+        if (confirm('هل تريد البدء بتقييم ' + child.name + ' الآن؟')) {
+          window.location.href = `assessment.html?child=${cid}`;
+        } else {
+          window.location.href = 'dashboard.html';
+        }
+      }, 600);
+    });
+  }
+</script>
+</body>
+</html>

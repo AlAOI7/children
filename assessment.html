@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تقييم السلوك | نظام تحليل سلوك الأطفال</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="navbar" id="navbar"></nav>
+
+<div class="main-content">
+  <div class="container-sm">
+
+    <!-- Child Info Banner -->
+    <div class="card mb-4" id="childBanner" style="padding:1.2rem 1.5rem;display:flex;align-items:center;gap:1rem;">
+      <div class="child-avatar" id="bannerAvatar" style="margin-bottom:0;width:48px;height:48px;font-size:1.2rem;flex-shrink:0">?</div>
+      <div>
+        <div style="font-weight:700;font-size:1.05rem" id="bannerName">جاري التحميل...</div>
+        <div style="color:var(--text-muted);font-size:0.85rem" id="bannerMeta"></div>
+      </div>
+      <div style="margin-right:auto">
+        <span style="background:rgba(108,99,255,0.15);color:var(--primary-light);padding:0.3rem 0.9rem;border-radius:50px;font-size:0.82rem;font-weight:700">📋 اختبار السلوك</span>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="mb-3">
+      <div class="progress-text">
+        <span id="progressLabel">السؤال 1 من 20</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar" style="width:0%"></div>
+      </div>
+
+      <!-- Category indicators -->
+      <div class="flex gap-2 flex-wrap mt-1" id="categoryBar">
+        <span id="cat-attention" style="font-size:0.78rem;padding:0.2rem 0.7rem;border-radius:50px;background:rgba(108,99,255,0.1);color:var(--primary-light);">🧠 الانتباه</span>
+        <span id="cat-hyperactivity" style="font-size:0.78rem;padding:0.2rem 0.7rem;border-radius:50px;background:rgba(255,255,255,0.05);color:var(--text-muted);">⚡ فرط الحركة</span>
+        <span id="cat-social" style="font-size:0.78rem;padding:0.2rem 0.7rem;border-radius:50px;background:rgba(255,255,255,0.05);color:var(--text-muted);">👫 التفاعل الاجتماعي</span>
+      </div>
+    </div>
+
+    <!-- Questions Container -->
+    <div id="questionsContainer"></div>
+
+    <!-- Navigation Buttons -->
+    <div class="flex gap-2 mt-3">
+      <button class="btn btn-outline" id="prevBtn" onclick="prevQuestion()" disabled>← السابق</button>
+      <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" style="flex:1">التالي →</button>
+    </div>
+
+    <!-- Score Preview -->
+    <div class="card mt-3" id="scorePreview" style="display:none;">
+      <div class="section-title">ملخص الإجابات</div>
+      <div class="grid grid-3" id="scorePreviewGrid"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/assessment.js"></script>
+<script>
+  const user = requireAuth();
+  if (!user) throw new Error('Unauthenticated');
+
+  const childId = getQueryParam('child');
+  if (!childId) { window.location.href = 'dashboard.html'; }
+
+  renderNavbar('dashboard');
+
+  let currentQ = 0;
+  const answers = {};
+  let childData = null;
+
+  // Load child data async — questions show immediately
+  DB.getChild(childId).then(child => {
+    if (!child) { window.location.href = 'dashboard.html'; return; }
+    childData = child;
+    document.getElementById('bannerAvatar').textContent = child.name.charAt(0);
+    document.getElementById('bannerName').textContent = child.name;
+    document.getElementById('bannerMeta').textContent = `العمر: ${child.age} سنة | ${child.grade || ''} | ${child.gender === 'male' ? '👦 ذكر' : '👧 أنثى'}`;
+  });
+
+  const catMap = { attention: 'cat-attention', hyperactivity: 'cat-hyperactivity', social: 'cat-social' };
+
+  function updateProgress() {
+    const answered = Object.keys(answers).length;
+    const pct = Math.round((answered / QUESTIONS.length) * 100);
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = `السؤال ${currentQ + 1} من ${QUESTIONS.length}`;
+    document.getElementById('progressPct').textContent = pct + '%';
+
+    // Category indicator
+    const cats = ['attention', 'hyperactivity', 'social'];
+    const catBoundaries = { attention: [0,6], hyperactivity: [7,12], social: [13,19] };
+    cats.forEach(c => {
+      const [start, end] = catBoundaries[c];
+      const isActive = currentQ >= start && currentQ <= end;
+      const el = document.getElementById(catMap[c]);
+      if (isActive) {
+        el.style.background = 'rgba(108,99,255,0.2)';
+        el.style.color = 'var(--primary-light)';
+      } else {
+        el.style.background = 'rgba(255,255,255,0.05)';
+        el.style.color = 'var(--text-muted)';
+      }
+    });
+  }
+
+  function renderQuestion(index) {
+    const q = QUESTIONS[index];
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = `
+      <div class="question-card">
+        <div class="question-number">سؤال ${index + 1} / ${QUESTIONS.length} — ${CATEGORY_LABELS[q.category]}</div>
+        <div class="question-text">${q.text}</div>
+        <div class="scale-options">
+          ${SCALE_LABELS.map(s => `
+            <button class="scale-btn ${answers[q.id] === s.value ? 'selected' : ''}"
+              onclick="selectAnswer(${q.id}, ${s.value})">
+              <span class="scale-num">${s.value}</span>
+              ${s.label}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    document.getElementById('prevBtn').disabled = index === 0;
+    document.getElementById('nextBtn').textContent = index === QUESTIONS.length - 1 ? '✅ عرض النتيجة' : 'التالي →';
+    updateProgress();
+  }
+
+  function selectAnswer(qId, value) {
+    answers[qId] = value;
+    renderQuestion(currentQ);
+
+    // Update score preview
+    const answered = Object.keys(answers).length;
+    if (answered >= 5) {
+      document.getElementById('scorePreview').style.display = 'block';
+      updateScorePreview();
+    }
+  }
+
+  function updateScorePreview() {
+    const cats = ['attention', 'hyperactivity', 'social'];
+    const catQ = {
+      attention: QUESTIONS.filter(q => q.category === 'attention'),
+      hyperactivity: QUESTIONS.filter(q => q.category === 'hyperactivity'),
+      social: QUESTIONS.filter(q => q.category === 'social')
+    };
+    const grid = document.getElementById('scorePreviewGrid');
+    grid.innerHTML = cats.map(c => {
+      const qs = catQ[c];
+      const answered = qs.filter(q => answers[q.id]).length;
+      const score = qs.reduce((sum, q) => sum + (answers[q.id] || 0), 0);
+      return `
+        <div class="category-score-card">
+          <div class="cat-name">${CATEGORY_LABELS[c]}</div>
+          <div class="cat-val">${score}</div>
+          <div class="cat-max">/ ${CATEGORY_MAX[c]} (${answered}/${qs.length} أسئلة)</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function prevQuestion() {
+    if (currentQ > 0) { currentQ--; renderQuestion(currentQ); }
+  }
+
+  function nextQuestion() {
+    if (!answers[QUESTIONS[currentQ].id]) {
+      showToast('يرجى اختيار إجابة للسؤال الحالي', 'warning');
+      return;
+    }
+    if (currentQ === QUESTIONS.length - 1) {
+      submitAssessment();
+      return;
+    }
+    currentQ++;
+    renderQuestion(currentQ);
+  }
+
+  async function submitAssessment() {
+    const btn = document.getElementById('nextBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ جاري الحفظ...';
+
+    const categories = {};
+    QUESTIONS.forEach(q => {
+      if (!categories[q.category]) categories[q.category] = 0;
+      categories[q.category] += answers[q.id] || 0;
+    });
+    const total = Object.values(categories).reduce((a, b) => a + b, 0);
+    const level = classifyScore(total, categories);
+
+    const result = await DB.saveResult(childId, answers, total, level, categories);
+    showToast('تم حفظ التشخيص المبدئي بنجاح!', 'success');
+    setTimeout(() => {
+      window.location.href = `result.html?child=${childId}&result=${result ? result.id : ''}` ;
+    }, 800);
+  }
+
+  window.selectAnswer = selectAnswer;
+  window.prevQuestion = prevQuestion;
+  window.nextQuestion = nextQuestion;
+
+  renderQuestion(0);
+</script>
+</body>
+</html>

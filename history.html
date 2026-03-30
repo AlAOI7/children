@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سجل التقييمات | نظام تحليل سلوك الأطفال</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+<nav class="navbar" id="navbar"></nav>
+
+<div class="main-content">
+  <div class="container">
+
+    <div class="page-header">
+      <h1>سجل التقييمات</h1>
+      <p id="historySubtitle">تتبع تطور السلوك عبر الزمن</p>
+    </div>
+
+    <!-- Child selector (when no child in query param) -->
+    <div id="childSelectorWrap" class="hidden mb-4">
+      <div class="form-group" style="max-width:340px;margin:0 auto">
+        <label class="form-label">اختر الطفل</label>
+        <select id="childSelector" class="form-control" onchange="loadHistory(this.value)">
+          <option value="">-- اختر --</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Child Banner -->
+    <div class="card mb-4" id="childBannerH" style="padding:1.2rem 1.5rem;display:flex;align-items:center;gap:1rem;display:none">
+      <div class="child-avatar" id="bannerAvatarH" style="margin-bottom:0;width:48px;height:48px;font-size:1.2rem;flex-shrink:0">?</div>
+      <div>
+        <div style="font-weight:700;font-size:1.05rem" id="bannerNameH">...</div>
+        <div style="color:var(--text-muted);font-size:0.85rem" id="bannerMetaH"></div>
+      </div>
+      <div style="margin-right:auto">
+        <a id="newAssessH" href="#" class="btn btn-primary btn-sm">📋 تقييم جديد</a>
+      </div>
+    </div>
+
+    <!-- Trend Chart -->
+    <div class="chart-container mb-4 hidden" id="trendWrap">
+      <div class="chart-title">📈 تطور النتائج عبر الزمن</div>
+      <canvas id="trendChart" height="160"></canvas>
+    </div>
+
+    <!-- Timeline -->
+    <div id="timelineWrap" class="hidden">
+      <div class="section-title mb-3">سجل التقييمات التفصيلي</div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+    <div id="emptyH" class="empty-state hidden">
+      <div class="empty-icon">📋</div>
+      <h3>لا توجد تقييمات مسجلة</h3>
+      <p>لم يتم إجراء أي تقييم بعد</p>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/assessment.js"></script>
+<script src="js/charts.js"></script>
+<script>
+  const user = requireAuth();
+  if (!user) throw '';
+  renderNavbar('history');
+
+  const childIdParam = getQueryParam('child');
+
+  if (!childIdParam) {
+    // Show child selector async
+    document.getElementById('childSelectorWrap').classList.remove('hidden');
+    DB.getChildren().then(children => {
+      const sel = document.getElementById('childSelector');
+      children.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.child_id || c.id;
+        opt.textContent = c.name;
+        sel.appendChild(opt);
+      });
+    });
+  } else {
+    loadHistory(childIdParam);
+  }
+
+  async function loadHistory(childId) {
+    if (!childId) return;
+    const child = await DB.getChild(childId);
+    if (!child) return;
+
+    const childBanner = document.getElementById('childBannerH');
+    childBanner.style.display = 'flex';
+    document.getElementById('bannerAvatarH').textContent = child.name.charAt(0);
+    document.getElementById('bannerNameH').textContent = child.name;
+    document.getElementById('bannerMetaH').textContent = `العمر: ${child.age} سنة | ${child.grade || ''}`;
+    document.getElementById('newAssessH').href = `assessment.html?child=${childId}`;
+
+    const results = await DB.getResults(child.child_id || child.id || childId);
+    const empty = document.getElementById('emptyH');
+    const trendWrap = document.getElementById('trendWrap');
+    const timelineWrap = document.getElementById('timelineWrap');
+
+    if (results.length === 0) {
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    empty.classList.add('hidden');
+    trendWrap.classList.remove('hidden');
+    timelineWrap.classList.remove('hidden');
+
+    document.getElementById('historySubtitle').textContent = `${child.name} — ${results.length} تقييم مسجل`;
+
+    // Trend chart
+    setTimeout(() => renderTrendChart('trendChart', results), 100);
+
+    // Timeline
+    const timeline = document.getElementById('timeline');
+    timeline.innerHTML = results.map((r, i) => {
+      const info = getLevelInfo(r.level);
+      const cats = r.categories || {};
+      return `
+        <div class="timeline-item">
+          <div class="timeline-dot" style="background:${info.color};border-color:${info.color}"></div>
+          <div class="timeline-date">${formatDate(r.date)}</div>
+          <div class="timeline-card">
+            <div class="flex-between mb-2">
+              <div>
+                <span class="badge ${info.badge}">${info.emoji} ${info.label}</span>
+                <span style="color:var(--text-muted);font-size:0.82rem;margin-right:0.5rem">مجموع النقاط: ${r.total}/100</span>
+              </div>
+              <a href="result.html?child=${childId}&result=${r.id}" class="btn btn-outline btn-sm">عرض التفاصيل</a>
+            </div>
+            <div class="grid grid-3" style="gap:0.5rem">
+              ${['attention','hyperactivity','social'].map(c => `
+                <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:0.5rem;text-align:center">
+                  <div style="font-size:0.75rem;color:var(--text-muted)">${CATEGORY_LABELS[c]}</div>
+                  <div style="font-weight:700;color:var(--primary-light)">${cats[c]||0}<span style="font-size:0.7rem;color:var(--text-muted)">/${CATEGORY_MAX[c]}</span></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.loadHistory = loadHistory;
+</script>
+</body>
+</html>

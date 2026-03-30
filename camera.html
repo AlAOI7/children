@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تحليل الكاميرا | نظام تحليل سلوك الأطفال</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="navbar" id="navbar"></nav>
+
+<div class="main-content">
+  <div class="container-sm">
+
+    <!-- Child Banner -->
+    <div class="card mb-4" id="childBanner" style="padding:1.2rem 1.5rem;display:flex;align-items:center;gap:1rem;">
+      <div class="child-avatar" id="bannerAvatar" style="margin-bottom:0;width:48px;height:48px;font-size:1.2rem;flex-shrink:0">👤</div>
+      <div>
+        <div style="font-weight:700;font-size:1.05rem" id="bannerName">جاري التحميل...</div>
+        <div style="color:var(--text-muted);font-size:0.85rem" id="bannerMeta"></div>
+      </div>
+      <div style="margin-right:auto">
+        <span style="background:rgba(108,99,255,0.15);color:var(--primary-light);padding:0.3rem 0.9rem;border-radius:50px;font-size:0.82rem;font-weight:700">📷 تحليل الكاميرا</span>
+      </div>
+    </div>
+
+    <!-- ===== PERMISSION SCREEN ===== -->
+    <div id="permissionScreen" class="camera-permission-screen">
+      <div class="perm-icon">📷</div>
+      <h2 class="perm-title">تحليل سلوك الطفل عبر الكاميرا</h2>
+      <p class="perm-desc">
+        سيقوم النظام بتحليل حركة الطفل خلال جلسة مدتها <strong>30 ثانية</strong>
+        لاستخلاص مؤشرات مبدئية للتمييز بين طيف التوحد وفرط الحركة.
+      </p>
+
+      <div class="perm-badges">
+        <div class="perm-badge">🔒 التحليل يحدث محلياً في المتصفح فقط</div>
+        <div class="perm-badge">🆓 مجاني بدون إنترنت</div>
+        <div class="perm-badge">⚡ فوري بدون انتظار</div>
+      </div>
+
+      <div class="color-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#ef4444;box-shadow:0 0 10px #ef444488"></div>
+          <span>🔴 أحمر — طيف التوحد (ASD): حركة منخفضة + تعابير محدودة</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#10b981;box-shadow:0 0 10px #10b98188"></div>
+          <span>🟢 أخضر — فرط الحركة (ADHD): حركة مرتفعة + تعابير متغيرة</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 10px #f59e0b88"></div>
+          <span>🟡 أصفر — تشتت الانتباه: إشارات مختلطة</span>
+        </div>
+      </div>
+
+      <button id="startBtn" class="btn btn-primary btn-lg btn-full mt-3" onclick="onStartClicked()">
+        📷 السماح بالكاميرا وبدء التحليل
+      </button>
+      <div id="permError" style="display:none;color:#ef4444;margin-top:1rem;text-align:center;font-size:0.9rem;"></div>
+    </div>
+
+    <!-- ===== ANALYSIS SCREEN ===== -->
+    <div id="analysisScreen" style="display:none">
+
+      <!-- Video -->
+      <div class="camera-wrap" style="position:relative;margin-bottom:1.5rem">
+        <video id="videoEl" class="camera-video" autoplay muted playsinline style="transform:scaleX(-1)"></video>
+        <canvas id="canvasEl" class="camera-canvas" style="position:absolute;top:0;left:0;pointer-events:none"></canvas>
+
+        <!-- Live indicator -->
+        <div class="camera-indicator" id="liveIndicator" style="position:absolute;top:1rem;right:1rem;display:flex;align-items:center;gap:0.5rem;background:rgba(0,0,0,0.6);padding:0.4rem 0.9rem;border-radius:50px">
+          <div class="indicator-dot" id="indicatorDot" style="width:12px;height:12px;border-radius:50%;background:#6c63ff;animation:pulse 1s infinite"></div>
+          <span class="indicator-label" id="indicatorLabel" style="font-size:0.82rem;color:#fff">جاري التحليل...</span>
+        </div>
+      </div>
+
+      <!-- Timer -->
+      <div class="timer-section">
+        <div class="timer-ring-wrap">
+          <svg class="timer-ring" viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="52"/>
+            <circle class="ring-progress" id="ringProgress" cx="60" cy="60" r="52"/>
+          </svg>
+          <div class="timer-center">
+            <div class="timer-seconds" id="timerSeconds">30</div>
+            <div class="timer-unit">ثـانـيـة</div>
+          </div>
+        </div>
+
+        <!-- Live Metrics -->
+        <div class="live-metrics" id="liveMetrics">
+          <div class="metric-box">
+            <div class="metric-label">حركة الجسم</div>
+            <div class="metric-val" id="metricMovement">—</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">مستوى النشاط</div>
+            <div class="metric-val" id="metricActivity">—</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">العينات</div>
+            <div class="metric-val" id="metricSamples">0</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-outline btn-full mt-3" onclick="cancelSession()">❌ إلغاء</button>
+    </div>
+
+    <!-- ===== RESULT SCREEN ===== -->
+    <div id="resultScreen" style="display:none">
+      <div class="cam-result-hero" id="camResultHero">
+        <div class="cam-result-dot" id="camResultDot"></div>
+        <div class="cam-result-title" id="camResultTitle"></div>
+        <div class="cam-result-sub" id="camResultSub"></div>
+        <span class="badge mt-2" id="camResultBadge"></span>
+      </div>
+
+      <div class="card mb-4">
+        <div class="section-title">📊 تفاصيل القياس</div>
+        <div class="cam-metrics-grid" id="camMetricsGrid"></div>
+      </div>
+
+      <div style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-bottom:1.5rem;padding:1rem;border:1px solid var(--border);border-radius:var(--radius-sm)">
+        ⚠️ هذا <strong>مؤشر مبدئي مساعد</strong> فقط، يُستخدم بجانب الاستبيان. ليس تشخيصاً طبياً رسمياً.
+      </div>
+
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-primary" style="flex:1" onclick="saveAndGoResult()">💾 حفظ وعرض التقرير</button>
+        <button class="btn btn-outline" onclick="restartSession()">🔄 إعادة</button>
+        <a href="dashboard.html" class="btn btn-outline">← لوحة التحكم</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/camera.js"></script>
+<script>
+  // ── AUTH & INIT ─────────────────────────────────────────────
+  const user = requireAuth();
+  if (!user) throw new Error('Unauthenticated');
+
+  const childId = getQueryParam('child');
+  if (!childId) { window.location.href = 'dashboard.html'; }
+
+  renderNavbar('dashboard');
+
+  // Load child info in background (doesn't block anything)
+  DB.getChild(childId).then(child => {
+    if (!child) return;
+    document.getElementById('bannerAvatar').textContent = child.name.charAt(0);
+    document.getElementById('bannerName').textContent   = child.name;
+    document.getElementById('bannerMeta').textContent   =
+      `العمر: ${child.age} سنة | ${child.grade || ''} | ${child.gender === 'male' ? '👦 ذكر' : '👧 أنثى'}`;
+  });
+
+  // ── RING ────────────────────────────────────────────────────
+  const RING_C = 2 * Math.PI * 52;
+  document.getElementById('ringProgress').style.strokeDasharray = RING_C;
+  let finalResult = null;
+
+  // ── START ───────────────────────────────────────────────────
+  async function onStartClicked() {
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ جاري فتح الكاميرا...';
+    document.getElementById('permError').style.display = 'none';
+
+    const videoEl = document.getElementById('videoEl');
+    const ok = await startCameraStream(videoEl);
+
+    if (!ok) {
+      document.getElementById('permError').style.display = 'block';
+      document.getElementById('permError').textContent =
+        '❌ لم يتم السماح بالكاميرا. انقر على 🔒 في شريط العنوان وأعط الإذن ثم أعد المحاولة.';
+      btn.disabled = false;
+      btn.textContent = '📷 السماح بالكاميرا وبدء التحليل';
+      return;
+    }
+
+    // Switch screens immediately
+    document.getElementById('permissionScreen').style.display = 'none';
+    document.getElementById('analysisScreen').style.display   = 'block';
+
+    resetSession();
+    sessionActive = true;
+    startCountdown();
+    startAnalysisLoop();
+  }
+
+  // ── COUNTDOWN ──────────────────────────────────────────────
+  function startCountdown() {
+    secondsLeft = CAMERA_CONFIG.SESSION_DURATION;
+    updateTimerUI();
+    sessionTimer = setInterval(() => {
+      secondsLeft--;
+      updateTimerUI();
+      if (secondsLeft <= 0) { clearInterval(sessionTimer); endSession(); }
+    }, 1000);
+  }
+
+  function updateTimerUI() {
+    document.getElementById('timerSeconds').textContent = secondsLeft;
+    const offset = RING_C * (1 - secondsLeft / CAMERA_CONFIG.SESSION_DURATION);
+    document.getElementById('ringProgress').style.strokeDashoffset = offset;
+  }
+
+  // ── ANALYSIS LOOP (pure JS, instant, no server) ────────────
+  function startAnalysisLoop() {
+    const videoEl  = document.getElementById('videoEl');
+    const canvasEl = document.getElementById('canvasEl');
+    const ctx      = canvasEl.getContext('2d');
+
+    tickInterval = setInterval(() => {
+      if (!sessionActive) return;
+
+      // 1. Sample frame
+      const sample = sampleFrame(videoEl);
+      if (frameSamples.length < CAMERA_CONFIG.MAX_FRAMES_STORED) {
+        frameSamples.push(sample);
+      }
+
+      // 2. Draw scanning overlay on canvas
+      canvasEl.width  = videoEl.videoWidth  || 640;
+      canvasEl.height = videoEl.videoHeight || 480;
+      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      const scanY = ((Date.now() % 2000) / 2000) * canvasEl.height;
+      const grad  = ctx.createLinearGradient(0, scanY - 25, 0, scanY + 25);
+      grad.addColorStop(0,   'transparent');
+      grad.addColorStop(0.5, 'rgba(108,99,255,0.35)');
+      grad.addColorStop(1,   'transparent');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, scanY - 25, canvasEl.width, 50);
+
+      // 3. Update UI
+      const level = computeLiveIndicator();
+      updateLiveUI(sample, level);
+
+    }, CAMERA_CONFIG.TICK_INTERVAL);
+  }
+
+  function updateLiveUI(sample, level) {
+    // Metrics
+    document.getElementById('metricMovement').textContent = sample.movement.toFixed(1);
+    document.getElementById('metricActivity').textContent =
+      sample.movement < 2 ? 'منخفض' : sample.movement < 5 ? 'متوسط' : 'مرتفع';
+    document.getElementById('metricSamples').textContent = frameSamples.length;
+
+    // Indicator
+    const colors = {
+      autism:      { color: '#ef4444', text: '🔴 مؤشر طيف التوحد (ASD)' },
+      hyperactive: { color: '#10b981', text: '🟢 مؤشر فرط الحركة (ADHD)' },
+      attention:   { color: '#f59e0b', text: '🟡 مؤشر تشتت الانتباه' },
+      normal:      { color: '#10b981', text: '🟢 سلوك طبيعي' },
+      analyzing:   { color: '#6c63ff', text: '🔵 جاري التحليل...' }
+    };
+    const info = colors[level] || colors.analyzing;
+    const dot  = document.getElementById('indicatorDot');
+    dot.style.background  = info.color;
+    dot.style.boxShadow   = `0 0 12px ${info.color}`;
+    document.getElementById('indicatorLabel').textContent = info.text;
+  }
+
+  // ── END SESSION ─────────────────────────────────────────────
+  function endSession() {
+    sessionActive = false;
+    clearInterval(tickInterval);
+    stopCameraStream();
+    finalResult = getFinalResult();
+    showResultScreen(finalResult);
+  }
+
+  function cancelSession() {
+    sessionActive = false;
+    clearInterval(tickInterval);
+    clearInterval(sessionTimer);
+    stopCameraStream();
+    document.getElementById('analysisScreen').style.display    = 'none';
+    document.getElementById('permissionScreen').style.display  = 'block';
+    const btn = document.getElementById('startBtn');
+    btn.disabled    = false;
+    btn.textContent = '📷 السماح بالكاميرا وبدء التحليل';
+    resetSession();
+  }
+
+  // ── RESULT SCREEN ───────────────────────────────────────────
+  function showResultScreen(res) {
+    document.getElementById('analysisScreen').style.display = 'none';
+    document.getElementById('resultScreen').style.display   = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    const levelMap = {
+      autism:      { color:'#ef4444', glow:'#ef444433', emoji:'🔴', label:'مؤشر طيف التوحد (ASD)', badge:'badge-autism',      sub:'حركة منخفضة وتعابير محدودة — مرتبط بطيف التوحد' },
+      hyperactive: { color:'#10b981', glow:'#10b98133', emoji:'🟢', label:'مؤشر فرط الحركة (ADHD)', badge:'badge-hyperactive', sub:'حركة مرتفعة وتعابير متغيرة — مرتبط بفرط الحركة' },
+      attention:   { color:'#f59e0b', glow:'#f59e0b33', emoji:'🟡', label:'مؤشر تشتت الانتباه',    badge:'badge-attention',   sub:'إشارات مختلطة — يُنصح بإجراء الاستبيان التفصيلي' },
+      normal:      { color:'#10b981', glow:'#10b98133', emoji:'🟢', label:'لا توجد مؤشرات واضحة',  badge:'badge-normal',      sub:'لم تُرصد أنماط سلوكية استثنائية خلال الجلسة' }
+    };
+    const info = levelMap[res.level] || levelMap.normal;
+    const m    = res.metrics;
+
+    document.getElementById('camResultDot').style.cssText   = `background:${info.color};box-shadow:0 0 40px ${info.color};width:80px;height:80px;border-radius:50%;margin:0 auto 1rem`;
+    document.getElementById('camResultTitle').textContent   = `${info.emoji} ${info.label}`;
+    document.getElementById('camResultSub').textContent     = info.sub;
+    document.getElementById('camResultHero').style.borderColor = info.color + '44';
+    document.getElementById('camResultBadge').className    = `badge ${info.badge}`;
+    document.getElementById('camResultBadge').textContent  = info.label;
+
+    document.getElementById('camMetricsGrid').innerHTML = `
+      <div class="cam-metric-card">
+        <div class="cam-metric-icon">🏃</div>
+        <div class="cam-metric-val">${(m.avgMovement||0).toFixed(1)}</div>
+        <div class="cam-metric-label">متوسط الحركة</div>
+      </div>
+      <div class="cam-metric-card">
+        <div class="cam-metric-icon">🎭</div>
+        <div class="cam-metric-val">${((m.expressionVariance||0)*10).toFixed(1)}%</div>
+        <div class="cam-metric-label">تنوع الحركة</div>
+      </div>
+      <div class="cam-metric-card">
+        <div class="cam-metric-icon">📊</div>
+        <div class="cam-metric-val">${m.sampleCount||0}</div>
+        <div class="cam-metric-label">عدد العينات</div>
+      </div>
+    `;
+  }
+
+  // ── SAVE & NAVIGATE ─────────────────────────────────────────
+  async function saveAndGoResult() {
+    if (!finalResult) { showToast('لا توجد بيانات لحفظها', 'warning'); return; }
+    showToast('جاري الحفظ...', 'info');
+    await saveSessionToServer(childId, finalResult);
+    showToast('✅ تم الحفظ!', 'success');
+    const latest = await DB.getLatestResult(childId);
+    if (latest) {
+      const rid = latest.id || latest.report_id;
+      window.location.href = `result.html?child=${childId}&result=${rid}`;
+    } else {
+      window.location.href = `dashboard.html`;
+    }
+  }
+
+  function restartSession() {
+    document.getElementById('resultScreen').style.display     = 'none';
+    document.getElementById('permissionScreen').style.display = 'block';
+    document.getElementById('startBtn').disabled    = false;
+    document.getElementById('startBtn').textContent = '📷 السماح بالكاميرا وبدء التحليل';
+    finalResult = null;
+    resetSession();
+  }
+
+  window.onStartClicked  = onStartClicked;
+  window.cancelSession   = cancelSession;
+  window.saveAndGoResult = saveAndGoResult;
+  window.restartSession  = restartSession;
+</script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>عن المشروع | نظام تحليل سلوك الأطفال</title>
+  <meta name="description" content="Smart Child Behavior Analysis System - نظام تحليل سلوك الأطفال الذكي">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .about-hero {
+      text-align: center;
+      padding: 3.5rem 0 2.5rem;
+    }
+    .about-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      backdrop-filter: blur(20px);
+      animation: fadeInUp 0.5s ease;
+    }
+    .about-section h2 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--primary-light);
+    }
+    .about-section p, .about-section li {
+      color: #c4c4d8;
+      font-size: 0.96rem;
+      line-height: 2;
+    }
+    .about-section ul {
+      list-style: none;
+      padding: 0;
+    }
+    .about-section ul li {
+      padding: 0.4rem 0;
+      padding-right: 1.5rem;
+      position: relative;
+    }
+    .about-section ul li::before {
+      content: '✦';
+      position: absolute;
+      right: 0;
+      color: var(--primary);
+      font-size: 0.7rem;
+      top: 0.55rem;
+    }
+    .highlight { color: #a5b4fc; font-weight: 700; }
+    .highlight-cyan { color: #67e8f9; font-weight: 700; }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+    .info-item {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      text-align: center;
+    }
+    .info-item .info-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+    .info-item .info-label { font-size: 0.78rem; color: var(--text-muted); }
+    .info-item .info-val { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-top: 0.2rem; }
+    .scope-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .scope-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1.2rem;
+    }
+    .scope-box .scope-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 0.7rem;
+    }
+    .scope-box.include .scope-title { color: #34d399; }
+    .scope-box.exclude .scope-title { color: #f87171; }
+    .tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 50px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin: 0.2rem;
+    }
+    .tag-purple { background: rgba(108,99,255,0.15); color: #a5b4fc; border: 1px solid rgba(108,99,255,0.25); }
+    .tag-cyan   { background: rgba(6,182,212,0.12);  color: #67e8f9; border: 1px solid rgba(6,182,212,0.2); }
+    .tag-green  { background: rgba(16,185,129,0.1);  color: #6ee7b7; border: 1px solid rgba(16,185,129,0.2); }
+    .disclaimer-box {
+      background: rgba(245,158,11,0.08);
+      border: 1.5px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .disclaimer-box .disc-icon { font-size: 2rem; flex-shrink: 0; }
+    .disclaimer-box p { color: #fbbf24; font-size: 0.95rem; line-height: 1.9; margin: 0; }
+
+    @media (max-width: 600px) {
+      .scope-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar" id="navbar">
+  <a href="index.html" class="nav-brand">
+    <div class="logo-icon">🧠</div>
+    <span>تحليل سلوك الأطفال</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">الرئيسية</a></li>
+    <li><a href="about.html" style="color:var(--primary-light)">عن المشروع</a></li>
+    <li><a href="login.html">تسجيل الدخول</a></li>
+  </ul>
+  <div>
+    <a href="register.html" class="btn btn-primary btn-sm">إنشاء حساب</a>
+  </div>
+</nav>
+
+<div class="main-content">
+  <div class="container-sm">
+
+    <!-- Hero -->
+    <div class="about-hero">
+      <div class="hero-badge" style="margin-bottom:1rem;">📌 فكرة المشروع</div>
+      <h1 style="font-size:2rem;font-weight:900;margin-bottom:0.8rem;">
+        <span class="text-gradient">Smart Child Behavior</span><br>Analysis System
+      </h1>
+      <p style="color:var(--text-secondary);font-size:1rem;max-width:520px;margin:0 auto;">
+        مشروع تخرج في هندسة البرمجيات — نظام ذكي لتحليل سلوك الأطفال والكشف المبكر عن مشاكل الانتباه وفرط الحركة والتوحد
+      </p>
+    </div>
+
+    <!-- Project overview tags -->
+    <div style="text-align:center;margin-bottom:2rem;">
+      <span class="tag tag-purple">🧠 ADHD</span>
+      <span class="tag tag-purple">🌈 ASD – طيف التوحد</span>
+      <span class="tag tag-cyan">📊 تحليل البيانات</span>
+      <span class="tag tag-cyan">🏫 التعليم الذكي</span>
+      <span class="tag tag-green">👶 رعاية الأطفال</span>
+      <span class="tag tag-green">🎓 مشروع تخرج</span>
+    </div>
+
+    <!-- 1. فكرة المشروع -->
+    <div class="about-section">
+      <h2>💡 فكرة المشروع</h2>
+      <p>
+        تطوير تطبيق ويب يُساعد <span class="highlight">المعلمين وأولياء الأمور</span> على
+        <span class="highlight">تقييم سلوك الأطفال</span> من خلال مجموعة أسئلة حول التركيز،
+        الحركة، والتفاعل الاجتماعي. يقوم النظام بتحليل الإجابات باستخدام
+        <span class="highlight">خوارزمية نقاط</span> ثم يعرض نتيجة توضح مستوى الانتباه
+        أو التشتت لدى الطفل.
+      </p>
+      <p style="margin-top:0.7rem;">
+        يقدم التطبيق <span class="highlight">مؤشراً أولياً</span> لاحتمال وجود مشاكل في الانتباه
+        أو السلوك مثل
+        <span class="highlight-cyan">Attention Deficit Hyperactivity Disorder (ADHD)</span> أو
+        <span class="highlight-cyan">Autism Spectrum Disorder (ASD)</span>،
+        مع عرض النتيجة بشكل بسيط باستخدام ألوان وتقارير تساعد المعلمين والأهل على متابعة حالة الطفل.
+      </p>
+    </div>
+
+    <!-- 2. مشكلة البحث -->
+    <div class="about-section">
+      <h2>🔍 مشكلة البحث (Problem Statement)</h2>
+      <p>في كثير من المدارس والمنازل:</p>
+      <ul>
+        <li>يتم ملاحظة سلوك الأطفال بشكل <span class="highlight">عشوائي وغير منظم</span>.</li>
+        <li>لا يوجد نظام يساعد في <span class="highlight">تسجيل السلوك وتحليله</span> بطريقة موضوعية.</li>
+        <li>المعلم أو ولي الأمر قد لا يستطيع تحديد ما إذا كان السلوك <span class="highlight">طبيعي أو يحتاج متابعة</span>.</li>
+        <li>التشخيص التقليدي يستغرق وقتاً طويلاً ويعتمد على تقييم ذاتي.</li>
+      </ul>
+      <p style="margin-top:0.8rem;">
+        لذلك تظهر الحاجة إلى <span class="highlight">نظام رقمي يساعد في تقييم سلوك الطفل بطريقة منظمة تعتمد على تحليل البيانات</span>.
+      </p>
+    </div>
+
+    <!-- 3. أهداف المشروع -->
+    <div class="about-section">
+      <h2>🎯 أهداف المشروع</h2>
+      <p style="font-weight:700;color:var(--text-primary);margin-bottom:0.6rem;">الهدف الرئيسي:</p>
+      <p>
+        تطوير تطبيق يساعد في <span class="highlight">تحليل سلوك الأطفال وتقديم مؤشرات مبكرة لمشاكل الانتباه والتركيز</span>.
+      </p>
+      <p style="font-weight:700;color:var(--text-primary);margin:1rem 0 0.6rem;">الأهداف الفرعية:</p>
+      <ul>
+        <li>إنشاء نظام لإدارة بيانات الأطفال.</li>
+        <li>تصميم <span class="highlight">اختبار تقييم سلوكي</span> يشمل 20 سؤالاً موزعة على 3 محاور.</li>
+        <li>تحليل الإجابات باستخدام <span class="highlight">خوارزمية تقييم بالنقاط</span>.</li>
+        <li>عرض النتائج بشكل بصري واضح باستخدام الألوان والرسوم البيانية.</li>
+        <li>تقديم تقارير تساعد في متابعة حالة الطفل عبر الزمن.</li>
+        <li>تصدير تقرير <span class="highlight">PDF</span> احترافي قابل للمشاركة.</li>
+      </ul>
+    </div>
+
+    <!-- 4. نطاق المشروع -->
+    <div class="about-section">
+      <h2>📐 نطاق المشروع (Scope)</h2>
+      <div class="scope-row">
+        <div class="scope-box include">
+          <div class="scope-title">✅ يشمل المشروع</div>
+          <ul>
+            <li>تسجيل المستخدمين</li>
+            <li>إدارة بيانات الأطفال</li>
+            <li>اختبار تقييم السلوك</li>
+            <li>تحليل النتائج وتصنيفها</li>
+            <li>عرض تقارير بيانية</li>
+            <li>تصدير PDF</li>
+            <li>سجل تاريخي لكل طفل</li>
+          </ul>
+        </div>
+        <div class="scope-box exclude">
+          <div class="scope-title">❌ لا يشمل المشروع</div>
+          <ul>
+            <li>التشخيص الطبي الرسمي</li>
+            <li>الأجهزة الطبية المتخصصة</li>
+            <li>وصف الأدوية أو العلاج</li>
+            <li>الذكاء الاصطناعي المتقدم</li>
+            <li>تطبيق الجوال</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:1rem;font-size:0.88rem;font-style:italic;color:var(--text-muted);">
+        النظام يعمل كـ <span class="highlight">أداة تقييم أولية</span> فقط.
+      </p>
+    </div>
+
+    <!-- 5. أصحاب المصلحة -->
+    <div class="about-section">
+      <h2>👥 أصحاب المصلحة (Stakeholders)</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-icon">👩‍🏫</div>
+          <div class="info-label">المستخدم الأساسي</div>
+          <div class="info-val">المعلمون</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">👨‍👩‍👧</div>
+          <div class="info-label">المستخدم الأساسي</div>
+          <div class="info-val">أولياء الأمور</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">🏫</div>
+          <div class="info-label">المستخدم الثانوي</div>
+          <div class="info-val">إدارة المدرسة</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">🏥</div>
+          <div class="info-label">المستخدم الثانوي</div>
+          <div class="info-val">مراكز رعاية الأطفال</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. التقنيات المستخدمة -->
+    <div class="about-section">
+      <h2>🛠️ التقنيات المستخدمة</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-icon">🌐</div>
+          <div class="info-label">واجهة المستخدم</div>
+          <div class="info-val">HTML5 + CSS3</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">⚡</div>
+          <div class="info-label">المنطق والتفاعل</div>
+          <div class="info-val">JavaScript (ES6+)</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">📊</div>
+          <div class="info-label">الرسوم البيانية</div>
+          <div class="info-val">Chart.js</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">📄</div>
+          <div class="info-label">تصدير التقارير</div>
+          <div class="info-val">jsPDF</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">💾</div>
+          <div class="info-label">قاعدة البيانات</div>
+          <div class="info-val">localStorage</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">🎨</div>
+          <div class="info-label">التصميم</div>
+          <div class="info-val">Glassmorphism + RTL</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. خوارزمية التصنيف -->
+    <div class="about-section">
+      <h2>🧮 خوارزمية التصنيف</h2>
+      <p>كل سؤال يُقيَّم من <span class="highlight">1 إلى 5</span>:</p>
+      <div class="info-grid" style="margin:1rem 0;">
+        <div class="info-item"><div class="info-label">1</div><div class="info-val">نادراً</div></div>
+        <div class="info-item"><div class="info-label">2</div><div class="info-val">أحياناً</div></div>
+        <div class="info-item"><div class="info-label">3</div><div class="info-val">متوسط</div></div>
+        <div class="info-item"><div class="info-label">4</div><div class="info-val">غالباً</div></div>
+        <div class="info-item"><div class="info-label">5</div><div class="info-val">دائماً</div></div>
+      </div>
+      <p>ثم يُحسب <span class="highlight">مجموع النقاط</span> ويُصنَّف كالتالي:</p>
+      <div style="margin-top:1rem;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="padding:0.7rem;text-align:right;color:var(--text-secondary);">مجموع النقاط</th>
+              <th style="padding:0.7rem;text-align:right;color:var(--text-secondary);">التصنيف</th>
+              <th style="padding:0.7rem;text-align:right;color:var(--text-secondary);">التوصية</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+              <td style="padding:0.7rem;color:#c4c4d8;">0 – 40</td>
+              <td style="padding:0.7rem;"><span style="background:rgba(16,185,129,0.2);color:#34d399;padding:0.25rem 0.75rem;border-radius:50px;font-size:0.82rem;">🟢 طبيعي</span></td>
+              <td style="padding:0.7rem;color:var(--text-muted);font-size:0.85rem;">متابعة دورية</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+              <td style="padding:0.7rem;color:#c4c4d8;">41 – 70</td>
+              <td style="padding:0.7rem;"><span style="background:rgba(245,158,11,0.2);color:#fbbf24;padding:0.25rem 0.75rem;border-radius:50px;font-size:0.82rem;">🟡 تشتت انتباه</span></td>
+              <td style="padding:0.7rem;color:var(--text-muted);font-size:0.85rem;">متابعة وتدخل مبكر</td>
+            </tr>
+            <tr>
+              <td style="padding:0.7rem;color:#c4c4d8;">71 – 100</td>
+              <td style="padding:0.7rem;"><span style="background:rgba(239,68,68,0.2);color:#f87171;padding:0.25rem 0.75rem;border-radius:50px;font-size:0.82rem;">🔴 فرط حركة</span></td>
+              <td style="padding:0.7rem;color:var(--text-muted);font-size:0.85rem;">استشارة متخصص</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 8. أهمية المشروع -->
+    <div class="about-section">
+      <h2>🌟 أهمية المشروع</h2>
+      <ul>
+        <li>المساهمة في <span class="highlight">الاكتشاف المبكر</span> للمشكلات السلوكية لدى الأطفال.</li>
+        <li>دعم المعلمين في متابعة سلوك الطلاب بطريقة <span class="highlight">منظمة وموثقة</span>.</li>
+        <li>مساعدة أولياء الأمور على <span class="highlight">فهم سلوك أطفالهم</span> بشكل أوضح.</li>
+        <li>استخدام <span class="highlight">التكنولوجيا</span> لتحسين العملية التعليمية والرعائية.</li>
+        <li>توفير أداة <span class="highlight">سهلة الاستخدام</span> لا تتطلب خبرة طبية مسبقة.</li>
+      </ul>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="disclaimer-box" style="margin-bottom:2rem;">
+      <div class="disc-icon">⚠️</div>
+      <p>
+        <strong>تنبيه مهم:</strong> النظام لا يُعطي تشخيصاً طبياً، بل هو
+        <strong>أداة تقييم ومتابعة للسلوك فقط</strong>.
+        يُرجى الرجوع إلى طبيب أو أخصائي نفسي متخصص لأي تشخيص رسمي.
+        هذا المشروع أُعدَّ لأغراض <strong>أكاديمية</strong> في إطار مشروع تخرج لهندسة البرمجيات.
+      </p>
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align:center;margin-bottom:3rem;">
+      <a href="register.html" class="btn btn-primary btn-lg">🚀 ابدأ استخدام النظام</a>
+      <a href="index.html" class="btn btn-outline btn-lg" style="margin-right:1rem;">← الرئيسية</a>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/storage.js"></script>
+<script>
+  // If logged in, update navbar
+  const u = DB.getCurrentUser();
+  if (u) {
+    const nav = document.getElementById('navbar');
+    nav.innerHTML = `
+      <a href="dashboard.html" class="nav-brand">
+        <div class="logo-icon">🧠</div>
+        <span>تحليل سلوك الأطفال</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="dashboard.html">لوحة التحكم</a></li>
+        <li><a href="about.html" style="color:var(--primary-light)">عن المشروع</a></li>
+        <li><a href="add-child.html">إضافة طفل</a></li>
+      </ul>
+      <div class="nav-user">
+        <div class="user-avatar">${u.name.charAt(0)}</div>
+        <button class="btn btn-outline btn-sm" onclick="DB.logout();location.href='index.html'">خروج</button>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>
