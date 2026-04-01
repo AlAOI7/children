@@ -5,6 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>تحليل الكاميرا | نظام تحليل سلوك الأطفال</title>
   <link rel="stylesheet" href="css/style.css">
+  <!-- face-api.js: Free AI for real-time face expression detection in browser -->
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
+  <style>
+    .camera-wrap { position:relative; border-radius:16px; overflow:hidden; background:#000; }
+    .camera-wrap video { width:100%; display:block; transform:scaleX(-1); border-radius:16px; }
+    .camera-wrap canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
+    .model-loading { display:flex; align-items:center; gap:0.8rem; justify-content:center;
+      padding:1rem; background:rgba(108,99,255,0.1); border-radius:12px; margin-bottom:1rem; }
+    .model-loading .spin { width:20px;height:20px;border:3px solid #6c63ff33;border-top-color:#6c63ff;
+      border-radius:50%;animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .expr-bar { display:grid; grid-template-columns:1fr 1fr; gap:0.4rem; margin-top:0.5rem; }
+    .expr-item { display:flex; align-items:center; gap:0.4rem; font-size:0.78rem; }
+    .expr-fill { height:6px; border-radius:3px; background:var(--primary); transition:width 0.3s; min-width:2px; }
+  </style>
 </head>
 <body>
 <nav class="navbar" id="navbar"></nav>
@@ -13,69 +28,77 @@
   <div class="container-sm">
 
     <!-- Child Banner -->
-    <div class="card mb-4" id="childBanner" style="padding:1.2rem 1.5rem;display:flex;align-items:center;gap:1rem;">
+    <div class="card mb-4" style="padding:1.2rem 1.5rem;display:flex;align-items:center;gap:1rem;">
       <div class="child-avatar" id="bannerAvatar" style="margin-bottom:0;width:48px;height:48px;font-size:1.2rem;flex-shrink:0">👤</div>
       <div>
         <div style="font-weight:700;font-size:1.05rem" id="bannerName">جاري التحميل...</div>
         <div style="color:var(--text-muted);font-size:0.85rem" id="bannerMeta"></div>
       </div>
       <div style="margin-right:auto">
-        <span style="background:rgba(108,99,255,0.15);color:var(--primary-light);padding:0.3rem 0.9rem;border-radius:50px;font-size:0.82rem;font-weight:700">📷 تحليل الكاميرا</span>
+        <span style="background:rgba(108,99,255,0.15);color:var(--primary-light);padding:0.3rem 0.9rem;border-radius:50px;font-size:0.82rem;font-weight:700">🤖 تحليل AI</span>
       </div>
     </div>
 
-    <!-- ===== PERMISSION SCREEN ===== -->
-    <div id="permissionScreen" class="camera-permission-screen">
-      <div class="perm-icon">📷</div>
-      <h2 class="perm-title">تحليل سلوك الطفل عبر الكاميرا</h2>
-      <p class="perm-desc">
-        سيقوم النظام بتحليل حركة الطفل خلال جلسة مدتها <strong>30 ثانية</strong>
-        لاستخلاص مؤشرات مبدئية للتمييز بين طيف التوحد وفرط الحركة.
-      </p>
+    <!-- PERMISSION SCREEN -->
+    <div id="permissionScreen">
+      <div class="camera-permission-screen">
+        <div class="perm-icon">🤖</div>
+        <h2 class="perm-title">تحليل الكاميرا بالذكاء الاصطناعي</h2>
+        <p class="perm-desc">
+          يستخدم النظام نموذج <strong>face-api.js</strong> المجاني لتحليل تعابير الوجه في الوقت الحقيقي.
+          الجلسة مدتها <strong>30 ثانية</strong> — كل شيء يعمل في المتصفح بدون إنترنت.
+        </p>
 
-      <div class="perm-badges">
-        <div class="perm-badge">🔒 التحليل يحدث محلياً في المتصفح فقط</div>
-        <div class="perm-badge">🆓 مجاني بدون إنترنت</div>
-        <div class="perm-badge">⚡ فوري بدون انتظار</div>
+        <div class="perm-badges">
+          <div class="perm-badge">🤖 AI مجاني داخل المتصفح</div>
+          <div class="perm-badge">🔒 لا يُرفع أي بيانات</div>
+          <div class="perm-badge">⚡ تحليل فوري</div>
+        </div>
+
+        <div class="color-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#a855f7;box-shadow:0 0 10px #a855f788"></div>
+            <span>🟣 بنفسجي — طيف التوحد (ASD): وجه محايد + حركة منخفضة</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#ef4444;box-shadow:0 0 10px #ef444488"></div>
+            <span>🔴 أحمر — فرط الحركة (ADHD): حركة مرتفعة + تعابير متغيرة</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 10px #f59e0b88"></div>
+            <span>🟡 أصفر — تشتت الانتباه: إشارات مختلطة</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#10b981;box-shadow:0 0 10px #10b98188"></div>
+            <span>🟢 أخضر — سلوك طبيعي</span>
+          </div>
+        </div>
+
+        <!-- AI Model Loading -->
+        <div id="modelStatus" class="model-loading">
+          <div class="spin"></div>
+          <span id="modelStatusText">جاري تحميل نموذج الذكاء الاصطناعي... (أول مرة فقط)</span>
+        </div>
+
+        <button id="startBtn" class="btn btn-primary btn-lg btn-full mt-3" onclick="onStartClicked()" disabled>
+          🤖 بدء تحليل الكاميرا بالذكاء الاصطناعي
+        </button>
+        <div id="permError" style="display:none;color:#ef4444;margin-top:1rem;text-align:center;font-size:0.9rem;padding:0.8rem;background:rgba(239,68,68,0.1);border-radius:8px;"></div>
       </div>
-
-      <div class="color-legend">
-        <div class="legend-item">
-          <div class="legend-dot" style="background:#ef4444;box-shadow:0 0 10px #ef444488"></div>
-          <span>🔴 أحمر — طيف التوحد (ASD): حركة منخفضة + تعابير محدودة</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background:#10b981;box-shadow:0 0 10px #10b98188"></div>
-          <span>🟢 أخضر — فرط الحركة (ADHD): حركة مرتفعة + تعابير متغيرة</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 10px #f59e0b88"></div>
-          <span>🟡 أصفر — تشتت الانتباه: إشارات مختلطة</span>
-        </div>
-      </div>
-
-      <button id="startBtn" class="btn btn-primary btn-lg btn-full mt-3" onclick="onStartClicked()">
-        📷 السماح بالكاميرا وبدء التحليل
-      </button>
-      <div id="permError" style="display:none;color:#ef4444;margin-top:1rem;text-align:center;font-size:0.9rem;"></div>
     </div>
 
-    <!-- ===== ANALYSIS SCREEN ===== -->
+    <!-- ANALYSIS SCREEN -->
     <div id="analysisScreen" style="display:none">
-
-      <!-- Video -->
-      <div class="camera-wrap" style="position:relative;margin-bottom:1.5rem">
-        <video id="videoEl" class="camera-video" autoplay muted playsinline style="transform:scaleX(-1)"></video>
-        <canvas id="canvasEl" class="camera-canvas" style="position:absolute;top:0;left:0;pointer-events:none"></canvas>
-
-        <!-- Live indicator -->
-        <div class="camera-indicator" id="liveIndicator" style="position:absolute;top:1rem;right:1rem;display:flex;align-items:center;gap:0.5rem;background:rgba(0,0,0,0.6);padding:0.4rem 0.9rem;border-radius:50px">
-          <div class="indicator-dot" id="indicatorDot" style="width:12px;height:12px;border-radius:50%;background:#6c63ff;animation:pulse 1s infinite"></div>
-          <span class="indicator-label" id="indicatorLabel" style="font-size:0.82rem;color:#fff">جاري التحليل...</span>
+      <div class="camera-wrap mb-3">
+        <video id="videoEl" autoplay muted playsinline></video>
+        <canvas id="canvasEl"></canvas>
+        <div style="position:absolute;top:1rem;right:1rem;background:rgba(0,0,0,0.7);padding:0.4rem 0.9rem;border-radius:50px;display:flex;align-items:center;gap:0.5rem">
+          <div id="indicatorDot" style="width:12px;height:12px;border-radius:50%;background:#6c63ff;animation:pulse 1s infinite"></div>
+          <span id="indicatorLabel" style="font-size:0.82rem;color:#fff">🤖 AI يحلل...</span>
         </div>
       </div>
 
-      <!-- Timer -->
+      <!-- Timer + Metrics -->
       <div class="timer-section">
         <div class="timer-ring-wrap">
           <svg class="timer-ring" viewBox="0 0 120 120">
@@ -84,19 +107,18 @@
           </svg>
           <div class="timer-center">
             <div class="timer-seconds" id="timerSeconds">30</div>
-            <div class="timer-unit">ثـانـيـة</div>
+            <div class="timer-unit">ثانية</div>
           </div>
         </div>
 
-        <!-- Live Metrics -->
-        <div class="live-metrics" id="liveMetrics">
+        <div class="live-metrics">
           <div class="metric-box">
-            <div class="metric-label">حركة الجسم</div>
+            <div class="metric-label">حركة الرأس</div>
             <div class="metric-val" id="metricMovement">—</div>
           </div>
           <div class="metric-box">
-            <div class="metric-label">مستوى النشاط</div>
-            <div class="metric-val" id="metricActivity">—</div>
+            <div class="metric-label">التعبير السائد</div>
+            <div class="metric-val" id="metricExpression">—</div>
           </div>
           <div class="metric-box">
             <div class="metric-label">العينات</div>
@@ -105,25 +127,35 @@
         </div>
       </div>
 
-      <button class="btn btn-outline btn-full mt-3" onclick="cancelSession()">❌ إلغاء</button>
+      <!-- Live expression bars -->
+      <div class="card mt-3" id="exprCard" style="display:none">
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem">📊 تعابير الوجه المكتشفة</div>
+        <div class="expr-bar" id="exprBars"></div>
+      </div>
+
+      <button class="btn btn-outline btn-full mt-3" onclick="cancelSession()">❌ إلغاء الجلسة</button>
     </div>
 
-    <!-- ===== RESULT SCREEN ===== -->
+    <!-- RESULT SCREEN -->
     <div id="resultScreen" style="display:none">
-      <div class="cam-result-hero" id="camResultHero">
-        <div class="cam-result-dot" id="camResultDot"></div>
+      <div class="cam-result-hero" id="camResultHero" style="border:2px solid #6c63ff44">
+        <div id="camResultDot" style="width:80px;height:80px;border-radius:50%;margin:0 auto 1rem"></div>
         <div class="cam-result-title" id="camResultTitle"></div>
         <div class="cam-result-sub" id="camResultSub"></div>
         <span class="badge mt-2" id="camResultBadge"></span>
       </div>
 
       <div class="card mb-4">
-        <div class="section-title">📊 تفاصيل القياس</div>
+        <div class="section-title">📊 تفاصيل التحليل بالذكاء الاصطناعي</div>
         <div class="cam-metrics-grid" id="camMetricsGrid"></div>
       </div>
 
+      <!-- AI Expression breakdown -->
+      <div class="card mb-4" id="aiBreakdownCard"></div>
+
       <div style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-bottom:1.5rem;padding:1rem;border:1px solid var(--border);border-radius:var(--radius-sm)">
-        ⚠️ هذا <strong>مؤشر مبدئي مساعد</strong> فقط، يُستخدم بجانب الاستبيان. ليس تشخيصاً طبياً رسمياً.
+        ⚠️ هذا <strong>مؤشر مبدئي مساعد</strong> يعتمد على تحليل تعابير الوجه بالذكاء الاصطناعي.
+        ليس تشخيصاً طبياً رسمياً. يُستخدم بجانب الاستبيان.
       </div>
 
       <div class="flex gap-2 flex-wrap">
@@ -137,224 +169,465 @@
 </div>
 
 <script src="js/storage.js"></script>
-<script src="js/camera.js"></script>
 <script>
-  // ── AUTH & INIT ─────────────────────────────────────────────
-  const user = requireAuth();
-  if (!user) throw new Error('Unauthenticated');
+// ===== CONSTANTS =====
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
+const SESSION_DURATION = 30; // seconds
+const RING_C = 2 * Math.PI * 52;
 
-  const childId = getQueryParam('child');
-  if (!childId) { window.location.href = 'dashboard.html'; }
+const EXPR_AR = {
+  neutral: 'محايد', happy: 'سعيد', sad: 'حزين',
+  angry: 'غاضب', surprised: 'مندهش', fearful: 'خائف', disgusted: 'مشمئز'
+};
 
-  renderNavbar('dashboard');
+// ===== STATE =====
+let videoEl, canvasEl, stream;
+let sessionActive = false;
+let sessionTimer  = null;
+let detectionLoop = null;
+let secondsLeft   = SESSION_DURATION;
+let frameSamples  = [];   // array of {dominant, expressions, movement, hasface}
+let prevNose      = null;
+let finalResult   = null;
+let modelsLoaded  = false;
 
-  // Load child info in background (doesn't block anything)
-  DB.getChild(childId).then(child => {
-    if (!child) return;
-    document.getElementById('bannerAvatar').textContent = child.name.charAt(0);
-    document.getElementById('bannerName').textContent   = child.name;
-    document.getElementById('bannerMeta').textContent   =
-      `العمر: ${child.age} سنة | ${child.grade || ''} | ${child.gender === 'male' ? '👦 ذكر' : '👧 أنثى'}`;
-  });
+// ===== AUTH =====
+const user = requireAuth();
+if (!user) throw new Error('Unauthenticated');
+const childId = getQueryParam('child');
+if (!childId) window.location.href = 'dashboard.html';
+renderNavbar('dashboard');
 
-  // ── RING ────────────────────────────────────────────────────
-  const RING_C = 2 * Math.PI * 52;
-  document.getElementById('ringProgress').style.strokeDasharray = RING_C;
-  let finalResult = null;
+document.getElementById('ringProgress').style.strokeDasharray = RING_C;
 
-  // ── START ───────────────────────────────────────────────────
-  async function onStartClicked() {
-    const btn = document.getElementById('startBtn');
-    btn.disabled = true;
-    btn.textContent = '⏳ جاري فتح الكاميرا...';
-    document.getElementById('permError').style.display = 'none';
+// Load child info (non-blocking)
+DB.getChild(childId).then(child => {
+  if (!child) return;
+  document.getElementById('bannerAvatar').textContent = child.name.charAt(0);
+  document.getElementById('bannerName').textContent   = child.name;
+  document.getElementById('bannerMeta').textContent   =
+    `العمر: ${child.age} سنة | ${child.grade || ''} | ${child.gender === 'male' ? '👦 ذكر' : '👧 أنثى'}`;
+});
 
-    const videoEl = document.getElementById('videoEl');
-    const ok = await startCameraStream(videoEl);
+// ===== LOAD AI MODELS =====
+async function loadModels() {
+  try {
+    document.getElementById('modelStatusText').textContent = 'تحميل نموذج كشف الوجه...';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    document.getElementById('modelStatusText').textContent = 'تحميل نموذج تحليل التعابير...';
+    await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL);
 
-    if (!ok) {
-      document.getElementById('permError').style.display = 'block';
-      document.getElementById('permError').textContent =
-        '❌ لم يتم السماح بالكاميرا. انقر على 🔒 في شريط العنوان وأعط الإذن ثم أعد المحاولة.';
-      btn.disabled = false;
-      btn.textContent = '📷 السماح بالكاميرا وبدء التحليل';
-      return;
-    }
+    modelsLoaded = true;
+    document.getElementById('modelStatus').innerHTML =
+      '<span style="color:#10b981;font-weight:700">✅ نموذج AI جاهز — يمكنك بدء التحليل</span>';
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('startBtn').textContent = '🤖 بدء تحليل الكاميرا بالذكاء الاصطناعي';
+  } catch(e) {
+    document.getElementById('modelStatus').innerHTML =
+      `<span style="color:#f59e0b">⚠️ تعذّر تحميل نموذج AI (${e.message}) — سيتم الاستخدام بتحليل الحركة فقط</span>`;
+    modelsLoaded = false;
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('startBtn').textContent = '📷 بدء تحليل الكاميرا (بدون AI)';
+  }
+}
 
-    // Switch screens immediately
-    document.getElementById('permissionScreen').style.display = 'none';
-    document.getElementById('analysisScreen').style.display   = 'block';
+// ===== START =====
+async function onStartClicked() {
+  const btn = document.getElementById('startBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري فتح الكاميرا...';
+  document.getElementById('permError').style.display = 'none';
 
-    resetSession();
-    sessionActive = true;
-    startCountdown();
-    startAnalysisLoop();
+  videoEl  = document.getElementById('videoEl');
+  canvasEl = document.getElementById('canvasEl');
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { width:{ideal:640}, height:{ideal:480}, facingMode:'user' },
+      audio: false
+    });
+    videoEl.srcObject = stream;
+    await new Promise(res => { videoEl.onloadedmetadata = res; });
+    videoEl.play();
+  } catch(err) {
+    let msg = '❌ لم يُمنح إذن الكاميرا. ';
+    if (err.name === 'NotAllowedError')   msg += 'انقر على 🔒 في شريط العنوان ← السماح بالكاميرا.';
+    else if (err.name === 'NotFoundError') msg += 'لا توجد كاميرا متصلة بالجهاز.';
+    else if (err.name === 'NotReadableError') msg += 'الكاميرا مستخدمة من تطبيق آخر. أغلقه وأعد المحاولة.';
+    else msg += err.message;
+    document.getElementById('permError').style.display = 'block';
+    document.getElementById('permError').textContent = msg;
+    btn.disabled = false;
+    btn.textContent = '🤖 بدء تحليل الكاميرا بالذكاء الاصطناعي';
+    return;
   }
 
-  // ── COUNTDOWN ──────────────────────────────────────────────
-  function startCountdown() {
-    secondsLeft = CAMERA_CONFIG.SESSION_DURATION;
+  // Switch to analysis screen
+  document.getElementById('permissionScreen').style.display = 'none';
+  document.getElementById('analysisScreen').style.display   = 'block';
+
+  // Reset state
+  frameSamples = []; prevNose = null; secondsLeft = SESSION_DURATION;
+  sessionActive = true; finalResult = null;
+
+  startCountdown();
+  startDetectionLoop();
+}
+
+// ===== COUNTDOWN =====
+function startCountdown() {
+  updateTimerUI();
+  sessionTimer = setInterval(() => {
+    secondsLeft--;
     updateTimerUI();
-    sessionTimer = setInterval(() => {
-      secondsLeft--;
-      updateTimerUI();
-      if (secondsLeft <= 0) { clearInterval(sessionTimer); endSession(); }
-    }, 1000);
-  }
+    if (secondsLeft <= 0) { clearInterval(sessionTimer); endSession(); }
+  }, 1000);
+}
 
-  function updateTimerUI() {
-    document.getElementById('timerSeconds').textContent = secondsLeft;
-    const offset = RING_C * (1 - secondsLeft / CAMERA_CONFIG.SESSION_DURATION);
-    document.getElementById('ringProgress').style.strokeDashoffset = offset;
-  }
+function updateTimerUI() {
+  document.getElementById('timerSeconds').textContent = secondsLeft;
+  document.getElementById('ringProgress').style.strokeDashoffset =
+    RING_C * (1 - secondsLeft / SESSION_DURATION);
+}
 
-  // ── ANALYSIS LOOP (pure JS, instant, no server) ────────────
-  function startAnalysisLoop() {
-    const videoEl  = document.getElementById('videoEl');
-    const canvasEl = document.getElementById('canvasEl');
-    const ctx      = canvasEl.getContext('2d');
+// ===== DETECTION LOOP =====
+function startDetectionLoop() {
+  detectionLoop = setInterval(async () => {
+    if (!sessionActive) return;
+    if (!videoEl || videoEl.readyState < 2) return;
 
-    tickInterval = setInterval(() => {
-      if (!sessionActive) return;
+    let sample = { dominant: 'neutral', expressions: {}, movement: 0, hasFace: false };
 
-      // 1. Sample frame
-      const sample = sampleFrame(videoEl);
-      if (frameSamples.length < CAMERA_CONFIG.MAX_FRAMES_STORED) {
-        frameSamples.push(sample);
-      }
+    // ── AI Face Detection ──────────────────────────────────
+    if (modelsLoaded) {
+      try {
+        const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 });
+        const det  = await faceapi
+          .detectSingleFace(videoEl, opts)
+          .withFaceLandmarks(true)
+          .withFaceExpressions();
 
-      // 2. Draw scanning overlay on canvas
-      canvasEl.width  = videoEl.videoWidth  || 640;
-      canvasEl.height = videoEl.videoHeight || 480;
-      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-      const scanY = ((Date.now() % 2000) / 2000) * canvasEl.height;
-      const grad  = ctx.createLinearGradient(0, scanY - 25, 0, scanY + 25);
-      grad.addColorStop(0,   'transparent');
-      grad.addColorStop(0.5, 'rgba(108,99,255,0.35)');
-      grad.addColorStop(1,   'transparent');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, scanY - 25, canvasEl.width, 50);
+        if (det) {
+          sample.hasFace    = true;
+          sample.expressions = det.expressions;
 
-      // 3. Update UI
-      const level = computeLiveIndicator();
-      updateLiveUI(sample, level);
+          // Dominant expression
+          sample.dominant = Object.entries(det.expressions)
+            .sort((a,b) => b[1] - a[1])[0][0];
 
-    }, CAMERA_CONFIG.TICK_INTERVAL);
-  }
+          // Head movement from nose tip landmark
+          const nose = det.landmarks.getNose()[0];
+          if (prevNose) {
+            const dx = nose.x - prevNose.x;
+            const dy = nose.y - prevNose.y;
+            sample.movement = Math.sqrt(dx*dx + dy*dy);
+          }
+          prevNose = nose;
 
-  function updateLiveUI(sample, level) {
-    // Metrics
-    document.getElementById('metricMovement').textContent = sample.movement.toFixed(1);
-    document.getElementById('metricActivity').textContent =
-      sample.movement < 2 ? 'منخفض' : sample.movement < 5 ? 'متوسط' : 'مرتفع';
-    document.getElementById('metricSamples').textContent = frameSamples.length;
-
-    // Indicator
-    const colors = {
-      autism:      { color: '#ef4444', text: '🔴 مؤشر طيف التوحد (ASD)' },
-      hyperactive: { color: '#10b981', text: '🟢 مؤشر فرط الحركة (ADHD)' },
-      attention:   { color: '#f59e0b', text: '🟡 مؤشر تشتت الانتباه' },
-      normal:      { color: '#10b981', text: '🟢 سلوك طبيعي' },
-      analyzing:   { color: '#6c63ff', text: '🔵 جاري التحليل...' }
-    };
-    const info = colors[level] || colors.analyzing;
-    const dot  = document.getElementById('indicatorDot');
-    dot.style.background  = info.color;
-    dot.style.boxShadow   = `0 0 12px ${info.color}`;
-    document.getElementById('indicatorLabel').textContent = info.text;
-  }
-
-  // ── END SESSION ─────────────────────────────────────────────
-  function endSession() {
-    sessionActive = false;
-    clearInterval(tickInterval);
-    stopCameraStream();
-    finalResult = getFinalResult();
-    showResultScreen(finalResult);
-  }
-
-  function cancelSession() {
-    sessionActive = false;
-    clearInterval(tickInterval);
-    clearInterval(sessionTimer);
-    stopCameraStream();
-    document.getElementById('analysisScreen').style.display    = 'none';
-    document.getElementById('permissionScreen').style.display  = 'block';
-    const btn = document.getElementById('startBtn');
-    btn.disabled    = false;
-    btn.textContent = '📷 السماح بالكاميرا وبدء التحليل';
-    resetSession();
-  }
-
-  // ── RESULT SCREEN ───────────────────────────────────────────
-  function showResultScreen(res) {
-    document.getElementById('analysisScreen').style.display = 'none';
-    document.getElementById('resultScreen').style.display   = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    const levelMap = {
-      autism:      { color:'#ef4444', glow:'#ef444433', emoji:'🔴', label:'مؤشر طيف التوحد (ASD)', badge:'badge-autism',      sub:'حركة منخفضة وتعابير محدودة — مرتبط بطيف التوحد' },
-      hyperactive: { color:'#10b981', glow:'#10b98133', emoji:'🟢', label:'مؤشر فرط الحركة (ADHD)', badge:'badge-hyperactive', sub:'حركة مرتفعة وتعابير متغيرة — مرتبط بفرط الحركة' },
-      attention:   { color:'#f59e0b', glow:'#f59e0b33', emoji:'🟡', label:'مؤشر تشتت الانتباه',    badge:'badge-attention',   sub:'إشارات مختلطة — يُنصح بإجراء الاستبيان التفصيلي' },
-      normal:      { color:'#10b981', glow:'#10b98133', emoji:'🟢', label:'لا توجد مؤشرات واضحة',  badge:'badge-normal',      sub:'لم تُرصد أنماط سلوكية استثنائية خلال الجلسة' }
-    };
-    const info = levelMap[res.level] || levelMap.normal;
-    const m    = res.metrics;
-
-    document.getElementById('camResultDot').style.cssText   = `background:${info.color};box-shadow:0 0 40px ${info.color};width:80px;height:80px;border-radius:50%;margin:0 auto 1rem`;
-    document.getElementById('camResultTitle').textContent   = `${info.emoji} ${info.label}`;
-    document.getElementById('camResultSub').textContent     = info.sub;
-    document.getElementById('camResultHero').style.borderColor = info.color + '44';
-    document.getElementById('camResultBadge').className    = `badge ${info.badge}`;
-    document.getElementById('camResultBadge').textContent  = info.label;
-
-    document.getElementById('camMetricsGrid').innerHTML = `
-      <div class="cam-metric-card">
-        <div class="cam-metric-icon">🏃</div>
-        <div class="cam-metric-val">${(m.avgMovement||0).toFixed(1)}</div>
-        <div class="cam-metric-label">متوسط الحركة</div>
-      </div>
-      <div class="cam-metric-card">
-        <div class="cam-metric-icon">🎭</div>
-        <div class="cam-metric-val">${((m.expressionVariance||0)*10).toFixed(1)}%</div>
-        <div class="cam-metric-label">تنوع الحركة</div>
-      </div>
-      <div class="cam-metric-card">
-        <div class="cam-metric-icon">📊</div>
-        <div class="cam-metric-val">${m.sampleCount||0}</div>
-        <div class="cam-metric-label">عدد العينات</div>
-      </div>
-    `;
-  }
-
-  // ── SAVE & NAVIGATE ─────────────────────────────────────────
-  async function saveAndGoResult() {
-    if (!finalResult) { showToast('لا توجد بيانات لحفظها', 'warning'); return; }
-    showToast('جاري الحفظ...', 'info');
-    await saveSessionToServer(childId, finalResult);
-    showToast('✅ تم الحفظ!', 'success');
-    const latest = await DB.getLatestResult(childId);
-    if (latest) {
-      const rid = latest.id || latest.report_id;
-      window.location.href = `result.html?child=${childId}&result=${rid}`;
+          // Draw on canvas
+          drawDetection(det);
+        } else {
+          prevNose = null;
+          clearCanvas();
+        }
+      } catch {}
     } else {
-      window.location.href = `dashboard.html`;
+      // Fallback: pixel movement
+      sample.movement = estimatePixelMovement();
     }
+
+    frameSamples.push(sample);
+
+    // Update live UI
+    updateLiveUI(sample);
+
+  }, 500); // 2 analyses per second
+}
+
+// ===== DRAW FACE DETECTION =====
+function drawDetection(det) {
+  canvasEl.width  = videoEl.videoWidth;
+  canvasEl.height = videoEl.videoHeight;
+  const ctx = canvasEl.getContext('2d');
+  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+  // Mirror canvas to match mirrored video
+  ctx.save();
+  ctx.translate(canvasEl.width, 0);
+  ctx.scale(-1, 1);
+
+  // Bounding box
+  const box = det.detection.box;
+  const dom = det.expressions;
+  const topExpr = Object.entries(dom).sort((a,b)=>b[1]-a[1])[0][0];
+  const colors = {
+    neutral:'#6c63ff', happy:'#10b981', sad:'#60a5fa',
+    angry:'#ef4444', surprised:'#f59e0b', fearful:'#8b5cf6', disgusted:'#ec4899'
+  };
+  const c = colors[topExpr] || '#6c63ff';
+  ctx.strokeStyle = c;
+  ctx.lineWidth   = 3;
+  ctx.shadowColor = c;
+  ctx.shadowBlur  = 15;
+  ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+  // Label
+  ctx.fillStyle = c;
+  ctx.fillRect(box.x, box.y - 26, 140, 24);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 13px Arial';
+  ctx.fillText(`${EXPR_AR[topExpr]} (${(dom[topExpr]*100).toFixed(0)}%)`, box.x + 6, box.y - 8);
+
+  ctx.restore();
+}
+
+function clearCanvas() {
+  if (!canvasEl) return;
+  canvasEl.width  = videoEl.videoWidth;
+  canvasEl.height = videoEl.videoHeight;
+  canvasEl.getContext('2d').clearRect(0, 0, canvasEl.width, canvasEl.height);
+}
+
+// Pixel-based movement fallback
+let prevGray = null;
+function estimatePixelMovement() {
+  const w=80, h=60, c=document.createElement('canvas');
+  c.width=w; c.height=h;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(videoEl,0,0,w,h);
+  const d=ctx.getImageData(0,0,w,h).data;
+  const g=new Float32Array(w*h);
+  for(let i=0,j=0;i<d.length;i+=4,j++) g[j]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+  let mv=0;
+  if(prevGray){for(let i=0;i<g.length;i++) mv+=Math.abs(g[i]-prevGray[i]); mv/=g.length;}
+  prevGray=g;
+  return mv;
+}
+
+// ===== LIVE UI =====
+function updateLiveUI(sample) {
+  document.getElementById('metricSamples').textContent = frameSamples.length;
+  document.getElementById('metricMovement').textContent =
+    sample.movement < 2 ? 'منخفض' : sample.movement < 8 ? 'متوسط' : 'مرتفع';
+  document.getElementById('metricExpression').textContent = EXPR_AR[sample.dominant] || sample.dominant;
+
+  // Expression bars
+  if (sample.hasFace && sample.expressions) {
+    document.getElementById('exprCard').style.display = 'block';
+    const keys = ['neutral','happy','sad','angry','surprised','fearful','disgusted'];
+    document.getElementById('exprBars').innerHTML = keys.map(k => {
+      const v = ((sample.expressions[k] || 0) * 100).toFixed(0);
+      return `<div class="expr-item">
+        <span style="width:55px;text-align:right;font-size:0.75rem">${EXPR_AR[k]}</span>
+        <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:3px;height:6px">
+          <div class="expr-fill" style="width:${v}%;background:${v>50?'#6c63ff':'#60a5fa'}"></div>
+        </div>
+        <span style="width:35px;font-size:0.72rem;color:var(--text-muted)">${v}%</span>
+      </div>`;
+    }).join('');
   }
 
-  function restartSession() {
-    document.getElementById('resultScreen').style.display     = 'none';
-    document.getElementById('permissionScreen').style.display = 'block';
-    document.getElementById('startBtn').disabled    = false;
-    document.getElementById('startBtn').textContent = '📷 السماح بالكاميرا وبدء التحليل';
-    finalResult = null;
-    resetSession();
+  // Live indicator
+  if (frameSamples.length >= 10) {
+    const level = computeLevel();
+    const colors2 = {
+      autism:'#a855f7', hyperactive:'#ef4444', attention:'#f59e0b',
+      normal:'#10b981', analyzing:'#6c63ff'
+    };
+    const labels = {
+      autism:'🟣 مؤشر طيف التوحد (ASD)',
+      hyperactive:'🔴 مؤشر فرط الحركة (ADHD)',
+      attention:'🟡 مؤشر تشتت الانتباه',
+      normal:'🟢 سلوك طبيعي',
+      analyzing:'🤖 AI يحلل...'
+    };
+    document.getElementById('indicatorDot').style.background = colors2[level] || '#6c63ff';
+    document.getElementById('indicatorLabel').textContent    = labels[level] || '🤖 AI يحلل...';
   }
+}
 
-  window.onStartClicked  = onStartClicked;
-  window.cancelSession   = cancelSession;
-  window.saveAndGoResult = saveAndGoResult;
-  window.restartSession  = restartSession;
+// ===== CLASSIFICATION =====
+function computeLevel() {
+  if (!frameSamples.length) return 'analyzing';
+  const n = frameSamples.length;
+  const faceFrames = frameSamples.filter(f => f.hasFace);
+  const facePct    = faceFrames.length / n; // face presence ratio
+
+  const avgMovement = frameSamples.reduce((s,f)=>s+(f.movement||0),0)/n;
+  const neutralPct  = faceFrames.length
+    ? faceFrames.reduce((s,f)=>s+(f.expressions?.neutral||0),0)/faceFrames.length : 0.5;
+  const happyPct    = faceFrames.length
+    ? faceFrames.reduce((s,f)=>s+(f.expressions?.happy||0),0)/faceFrames.length   : 0;
+
+  // Expression variance (how much expressions change)
+  const movVals = frameSamples.map(f => f.movement || 0);
+  const movMean = avgMovement;
+  const movVar  = Math.sqrt(movVals.reduce((s,v)=>s+(v-movMean)**2,0)/n);
+
+  // ASD: stays still, very neutral face
+  if (avgMovement < 4 && neutralPct > 0.75 && facePct > 0.5) return 'autism';
+
+  // ADHD-H: lots of movement + varied expressions
+  if (avgMovement >= 8 && movVar >= 3) return 'hyperactive';
+
+  // ADHD-A: moderate movement or low face presence (often looking away)
+  if (avgMovement >= 5 || facePct < 0.4) return 'attention';
+
+  // Normal
+  if (avgMovement < 4 && neutralPct < 0.7) return 'normal';
+
+  return 'normal';
+}
+
+// ===== END SESSION =====
+function endSession() {
+  sessionActive = false;
+  clearInterval(detectionLoop);
+  if (stream) { stream.getTracks().forEach(t=>t.stop()); stream = null; }
+
+  const level    = computeLevel();
+  const n        = frameSamples.length;
+  const faceF    = frameSamples.filter(f=>f.hasFace);
+  const avgMv    = frameSamples.reduce((s,f)=>s+(f.movement||0),0)/(n||1);
+  const neutralP = faceF.length ? faceF.reduce((s,f)=>s+(f.expressions?.neutral||0),0)/faceF.length : 0;
+  const happyP   = faceF.length ? faceF.reduce((s,f)=>s+(f.expressions?.happy||0),0)/faceF.length   : 0;
+
+  // Count dominant expressions
+  const domCounts = {};
+  frameSamples.forEach(f => { domCounts[f.dominant] = (domCounts[f.dominant]||0)+1; });
+
+  finalResult = {
+    level,
+    metrics: {
+      avgMovement: parseFloat(avgMv.toFixed(2)),
+      avg_movement: parseFloat(avgMv.toFixed(2)),
+      avgNeutral:  parseFloat(neutralP.toFixed(3)),
+      avg_neutral:  parseFloat(neutralP.toFixed(3)),
+      happyRatio:   parseFloat(happyP.toFixed(3)),
+      facePct:      parseFloat((faceF.length/n).toFixed(2)),
+      sampleCount:  n,
+      sample_count: n,
+      expressionVariance: parseFloat(Math.sqrt(frameSamples.map(f=>f.movement||0)
+        .reduce((s,v,_,a)=>s+(v-avgMv)**2,0)/n).toFixed(3)),
+      domCounts
+    },
+    frames: frameSamples.slice(-30).map(f=>({
+      movement: f.movement||0,
+      dominant: f.dominant,
+      expressions: f.expressions||{}
+    })),
+    date: new Date().toISOString()
+  };
+
+  showResultScreen(finalResult);
+}
+
+function cancelSession() {
+  sessionActive = false;
+  clearInterval(detectionLoop);
+  clearInterval(sessionTimer);
+  if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  document.getElementById('analysisScreen').style.display    = 'none';
+  document.getElementById('permissionScreen').style.display  = 'block';
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('startBtn').textContent = '🤖 بدء تحليل الكاميرا بالذكاء الاصطناعي';
+  frameSamples = []; prevNose = null;
+}
+
+// ===== RESULT SCREEN =====
+function showResultScreen(res) {
+  document.getElementById('analysisScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display   = 'block';
+  window.scrollTo({ top:0, behavior:'smooth' });
+
+  const map = {
+    autism:      { color:'#a855f7', emoji:'🟣', label:'مؤشر طيف التوحد (ASD)',    badge:'badge-autism',      sub:'وجه محايد + حركة منخفضة — مؤشر مرتبط بطيف التوحد' },
+    hyperactive: { color:'#ef4444', emoji:'🔴', label:'مؤشر فرط الحركة (ADHD)',   badge:'badge-hyperactive', sub:'حركة مرتفعة + تعابير متغيرة — مؤشر فرط الحركة' },
+    attention:   { color:'#f59e0b', emoji:'🟡', label:'مؤشر تشتت الانتباه (ADHD)',badge:'badge-attention',   sub:'إشارات مختلطة — يُنصح بالاستبيان التفصيلي' },
+    normal:      { color:'#10b981', emoji:'🟢', label:'لا توجد مؤشرات واضحة',     badge:'badge-normal',      sub:'لم تُرصد أنماط سلوكية استثنائية' }
+  };
+  const info = map[res.level] || map.normal;
+  const m    = res.metrics;
+  const dot  = document.getElementById('camResultDot');
+  dot.style.background = info.color;
+  dot.style.boxShadow  = `0 0 40px ${info.color}`;
+  document.getElementById('camResultTitle').textContent   = `${info.emoji} ${info.label}`;
+  document.getElementById('camResultSub').textContent     = info.sub;
+  document.getElementById('camResultHero').style.borderColor = info.color + '44';
+  const badge = document.getElementById('camResultBadge');
+  badge.className   = `badge ${info.badge}`;
+  badge.textContent = info.label;
+
+  document.getElementById('camMetricsGrid').innerHTML = `
+    <div class="cam-metric-card">
+      <div class="cam-metric-icon">🏃</div>
+      <div class="cam-metric-val">${m.avgMovement.toFixed(1)}</div>
+      <div class="cam-metric-label">متوسط الحركة (px)</div>
+    </div>
+    <div class="cam-metric-card">
+      <div class="cam-metric-icon">😐</div>
+      <div class="cam-metric-val">${(m.avgNeutral*100).toFixed(0)}%</div>
+      <div class="cam-metric-label">نسبة التعبير المحايد</div>
+    </div>
+    <div class="cam-metric-card">
+      <div class="cam-metric-icon">👁️</div>
+      <div class="cam-metric-val">${(m.facePct*100).toFixed(0)}%</div>
+      <div class="cam-metric-label">حضور الوجه</div>
+    </div>
+    <div class="cam-metric-card">
+      <div class="cam-metric-icon">📊</div>
+      <div class="cam-metric-val">${m.sampleCount}</div>
+      <div class="cam-metric-label">عدد العينات</div>
+    </div>
+  `;
+
+  // Expression breakdown
+  if (m.domCounts) {
+    const total = Object.values(m.domCounts).reduce((a,b)=>a+b,0);
+    document.getElementById('aiBreakdownCard').innerHTML = `
+      <div class="section-title">🤖 توزيع التعابير خلال الجلسة</div>
+      <div style="display:grid;gap:0.5rem;margin-top:0.8rem">
+        ${Object.entries(m.domCounts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+          <div style="display:flex;align-items:center;gap:0.8rem">
+            <span style="width:70px;font-size:0.82rem">${EXPR_AR[k]||k}</span>
+            <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:4px;height:8px">
+              <div style="width:${(v/total*100).toFixed(0)}%;background:#6c63ff;height:8px;border-radius:4px;transition:width 1s"></div>
+            </div>
+            <span style="width:40px;font-size:0.8rem;color:var(--text-muted)">${(v/total*100).toFixed(0)}%</span>
+          </div>`).join('')}
+      </div>`;
+  }
+}
+
+// ===== SAVE =====
+async function saveAndGoResult() {
+  if (!finalResult) { showToast('لا توجد بيانات لحفظها', 'warning'); return; }
+  showToast('جاري الحفظ...', 'info');
+  await DB.saveCameraResult(childId, finalResult);
+  showToast('✅ تم الحفظ بنجاح!', 'success');
+  const latest = await DB.getLatestResult(childId);
+  if (latest) {
+    window.location.href = `result.html?child=${childId}&result=${latest.id || latest.report_id}`;
+  } else {
+    window.location.href = 'dashboard.html';
+  }
+}
+
+function restartSession() {
+  document.getElementById('resultScreen').style.display     = 'none';
+  document.getElementById('permissionScreen').style.display = 'block';
+  document.getElementById('startBtn').textContent = '🤖 بدء تحليل الكاميرا بالذكاء الاصطناعي';
+  finalResult = null; frameSamples = []; prevNose = null;
+}
+
+window.onStartClicked  = onStartClicked;
+window.cancelSession   = cancelSession;
+window.saveAndGoResult = saveAndGoResult;
+window.restartSession  = restartSession;
+
+// ===== AUTO-LOAD MODELS ON PAGE LOAD =====
+loadModels();
 </script>
 </body>
 </html>

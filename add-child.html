@@ -17,60 +17,61 @@
     </div>
 
     <div class="card">
-      <form id="addChildForm" novalidate>
-        <div class="form-group">
-          <label class="form-label">👦 اسم الطفل</label>
-          <input type="text" id="childName" class="form-control" placeholder="أدخل الاسم الكامل للطفل" required>
-        </div>
+     <form id="addChildForm" novalidate>
+  <div class="form-row" style="display:flex; flex-wrap:wrap; gap:1rem;">
+    <div class="form-group" style="flex:1 1 200px;">
+      <label class="form-label">👦 اسم الطفل</label>
+      <input type="text" id="childName" class="form-control" placeholder="أدخل الاسم الكامل للطفل" required>
+    </div>
 
-        <div class="grid grid-2">
-          <div class="form-group">
-            <label class="form-label">🎂 العمر (بالسنوات)</label>
-            <input type="number" id="childAge" class="form-control" placeholder="مثال: 7" min="2" max="18" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">⚥ الجنس</label>
-            <select id="childGender" class="form-control">
-              <option value="male">ذكر</option>
-              <option value="female">أنثى</option>
-            </select>
-          </div>
-        </div>
+    <div class="form-group" style="flex:1 1 100px;">
+      <label class="form-label">🎂 العمر (بالسنوات)</label>
+      <input type="number" id="childAge" class="form-control" placeholder="مثال: 7" min="2" max="18" required>
+    </div>
 
-        <div class="form-group">
-          <label class="form-label">📚 الصف الدراسي</label>
-          <select id="childGrade" class="form-control">
-            <option value="">اختر الصف</option>
-            <option>ما قبل المدرسة</option>
-            <option>الصف الأول الابتدائي</option>
-            <option>الصف الثاني الابتدائي</option>
-            <option>الصف الثالث الابتدائي</option>
-            <option>الصف الرابع الابتدائي</option>
-            <option>الصف الخامس الابتدائي</option>
-            <option>الصف السادس الابتدائي</option>
-            <option>الصف الأول المتوسط</option>
-            <option>الصف الثاني المتوسط</option>
-            <option>الصف الثالث المتوسط</option>
-          </select>
-        </div>
+    <div class="form-group" style="flex:1 1 120px;">
+      <label class="form-label">⚥ الجنس</label>
+      <select id="childGender" class="form-control">
+        <option value="male">ذكر</option>
+        <option value="female">أنثى</option>
+      </select>
+    </div>
 
-        <div class="form-group">
-          <label class="form-label">🏫 اسم المدرسة (اختياري)</label>
-          <input type="text" id="childSchool" class="form-control" placeholder="أدخل اسم المدرسة">
-        </div>
+    <div class="form-group" style="flex:1 1 180px;">
+      <label class="form-label">📚 الصف الدراسي</label>
+      <select id="childGrade" class="form-control">
+        <option value="">اختر الصف</option>
+        <option>ما قبل المدرسة</option>
+        <option>الصف الأول الابتدائي</option>
+        <option>الصف الثاني الابتدائي</option>
+        <option>الصف الثالث الابتدائي</option>
+        <option>الصف الرابع الابتدائي</option>
+        <option>الصف الخامس الابتدائي</option>
+        <option>الصف السادس الابتدائي</option>
+        <option>الصف الأول المتوسط</option>
+        <option>الصف الثاني المتوسط</option>
+        <option>الصف الثالث المتوسط</option>
+      </select>
+    </div>
 
-        <div class="form-group">
-          <label class="form-label">📝 ملاحظات إضافية (اختيارية)</label>
-          <textarea id="childNotes" class="form-control" rows="3" placeholder="أي ملاحظات مهمة عن الطفل..."></textarea>
-        </div>
+    <div class="form-group" style="flex:1 1 200px;">
+      <label class="form-label">🏫 اسم المدرسة (اختياري)</label>
+      <input type="text" id="childSchool" class="form-control" placeholder="أدخل اسم المدرسة">
+    </div>
 
-        <div class="form-error" id="child-err" style="display:block;margin-bottom:1rem;text-align:center;"></div>
+    <div class="form-group" style="flex:1 1 250px;">
+      <label class="form-label">📝 ملاحظات إضافية (اختيارية)</label>
+      <textarea id="childNotes" class="form-control" rows="3" placeholder="أي ملاحظات مهمة عن الطفل..."></textarea>
+    </div>
+  </div>
 
-        <div class="flex gap-2 flex-wrap">
-          <button type="submit" class="btn btn-primary btn-lg" style="flex:1">💾 حفظ وإضافة الطفل</button>
-          <a href="dashboard.html" class="btn btn-outline btn-lg" style="flex:1">إلغاء</a>
-        </div>
-      </form>
+  <div class="form-error" id="child-err" style="display:block;margin-bottom:1rem;text-align:center;"></div>
+
+  <div class="flex gap-2 flex-wrap">
+    <button type="submit" class="btn btn-primary btn-lg" style="flex:1">💾 حفظ وإضافة الطفل</button>
+    <a href="dashboard.html" class="btn btn-outline btn-lg" style="flex:1">إلغاء</a>
+  </div>
+</form>
     </div>
   </div>
 </div>
