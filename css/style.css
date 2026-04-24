@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap');
 
 :root {
+  --new-beige: #C4B5AD;
+
   --primary: #6c63ff;
   --primary-dark: #4f46e5;
   --primary-light: #a5b4fc;
@@ -9,20 +11,31 @@
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --bg-dark: #0f0e17;
-  --bg-card: rgba(255,255,255,0.05);
-  --bg-card-hover: rgba(255,255,255,0.08);
-  --border: rgba(255,255,255,0.1);
-  --text-primary: #f0eff4;
-  --text-secondary: #a0a0b8;
+
+  /* الخلفية أصبحت فاتحة باللون الجديد */
+  --bg-dark: #C4B5AD; 
+
+  /* تم تحويل شفافية البطاقات للون الأسود بدلاً من الأبيض لتظهر على الخلفية الفاتحة */
+  --bg-card: rgba(0, 0, 0, 0.05);
+  --bg-card-hover: rgba(0, 0, 0, 0.08);
+  --border: rgba(0, 0, 0, 0.1);
+
+  /* تم تغميق ألوان النصوص لتصبح مقروءة بوضوح */
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a68;
   --text-muted: #6b6b88;
+
   --gradient: linear-gradient(135deg, #6c63ff, #06b6d4);
   --gradient-card: linear-gradient(145deg, rgba(108,99,255,0.15), rgba(6,182,212,0.08));
-  --shadow: 0 20px 60px rgba(0,0,0,0.4);
-  --shadow-sm: 0 4px 20px rgba(0,0,0,0.2);
+  
+  /* تم تخفيف حدة الظل ليتناسب مع الألوان الفاتحة */
+  --shadow: 0 20px 60px rgba(0,0,0,0.1);
+  --shadow-sm: 0 4px 20px rgba(0,0,0,0.05);
+  
   --radius: 20px;
   --radius-sm: 12px;
 }
+
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
